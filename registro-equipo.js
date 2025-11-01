@@ -28,8 +28,25 @@ const anime = window.anime
 const XLSX = window.XLSX
 const db = window.db
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("[v0] DOMContentLoaded - Inicializando formulario")
+function waitForDB() {
+  return new Promise((resolve) => {
+    if (window.db) {
+      resolve()
+    } else {
+      const checkDB = setInterval(() => {
+        if (window.db) {
+          clearInterval(checkDB)
+          resolve()
+        }
+      }, 100)
+    }
+  })
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("[v0] DOMContentLoaded - Esperando DB")
+  await waitForDB()
+  console.log("[v0] DB disponible, inicializando formulario")
   initNavigation()
   initForm()
   addInitialPlayers()
