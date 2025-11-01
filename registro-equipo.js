@@ -80,14 +80,32 @@ function handleLogoUpload(e) {
 
 function addInitialPlayers() {
   console.log("[v0] Agregando 20 jugadores iniciales")
+  const container = document.getElementById("playersContainer")
+
+  if (!container) {
+    console.error("[v0] Container de jugadores no encontrado")
+    return
+  }
+
+  // Limpiar el container primero
+  container.innerHTML = ""
+
+  // Agregar 20 jugadores
   for (let i = 0; i < 20; i++) {
     addPlayer()
   }
-  console.log("[v0] Jugadores iniciales agregados")
+
+  console.log("[v0] Jugadores iniciales agregados:", container.children.length)
 }
 
 function addPlayer() {
   const container = document.getElementById("playersContainer")
+
+  if (!container) {
+    console.error("[v0] Container de jugadores no encontrado")
+    return
+  }
+
   const count = container.children.length
 
   if (count >= 24) {
@@ -119,17 +137,17 @@ function addPlayer() {
     <div class="player-inputs">
       <div class="form-group">
         <label>Nombre del Jugador</label>
-        <input type="text" name="playerName_${count}" placeholder="Nombre" class="player-name" maxlength="50">
+        <input type="text" name="playerName_${count}" placeholder="Nombre" class="player-name" maxlength="50" required>
       </div>
 
       <div class="form-group">
         <label>UID (20 dígitos)</label>
-        <input type="text" name="playerUID_${count}" placeholder="12345678901234567890" class="player-uid" maxlength="20" pattern="\\d{20}">
+        <input type="text" name="playerUID_${count}" placeholder="12345678901234567890" class="player-uid" maxlength="20" pattern="\\d{20}" required>
       </div>
 
       <div class="form-group">
         <label>País</label>
-        <select name="playerCountry_${count}" class="player-country">
+        <select name="playerCountry_${count}" class="player-country" required>
           <option value="">Seleccionar país</option>
           ${Object.entries(COUNTRIES)
             .map(([key, { name, flag }]) => `<option value="${key}">${flag} ${name}</option>`)
@@ -139,7 +157,7 @@ function addPlayer() {
 
       <div class="form-group">
         <label>Teléfono</label>
-        <input type="tel" name="playerPhone_${count}" placeholder="Número de teléfono" class="player-phone" data-player-index="${count}">
+        <input type="tel" name="playerPhone_${count}" placeholder="Número de teléfono" class="player-phone" data-player-index="${count}" required>
         <small class="phone-digits-hint"></small>
       </div>
     </div>
@@ -156,7 +174,8 @@ function addPlayer() {
     const hint = playerDiv.querySelector(".phone-digits-hint")
     if (country && COUNTRIES[country]) {
       const digits = COUNTRIES[country].digits
-      hint.textContent = `Ingresa ${digits} dígitos`
+      const countryCode = COUNTRIES[country].code
+      hint.textContent = `+${countryCode} - Ingresa ${digits} dígitos`
       phoneInput.maxLength = digits
       phoneInput.pattern = `\\d{${digits}}`
     } else {
@@ -165,6 +184,8 @@ function addPlayer() {
       phoneInput.pattern = ""
     }
   })
+
+  console.log("[v0] Jugador agregado, total:", container.children.length)
 }
 
 function removePlayer() {
@@ -221,6 +242,7 @@ async function handleFormSubmit(e) {
       name: nameInput ? nameInput.value.trim() : "",
       uid: uidInput ? uidInput.value.trim() : "",
       country: countrySelect ? countrySelect.value : "",
+      countryCode: countrySelect && countrySelect.value ? COUNTRIES[countrySelect.value].code : "",
       phone: phoneInput ? phoneInput.value.trim() : "",
       role: roleInput ? roleInput.value : "member",
     }
@@ -231,7 +253,7 @@ async function handleFormSubmit(e) {
   const totalPlayers = players.length
   if (totalPlayers < 20) {
     alert(
-      `ERROR: El equipo debe tener exactamente 20 jugadores.\nActualmente tienes ${totalPlayers}.\nAgrega ${20 - totalPlayers} jugador(es) más.`,
+      `ERROR: El equipo debe tener al menos 20 jugadores.\nActualmente tienes ${totalPlayers}.\nAgrega ${20 - totalPlayers} jugador(es) más.`,
     )
     return
   }
@@ -248,7 +270,7 @@ async function handleFormSubmit(e) {
   if (incompletePlayer !== -1) {
     const playerNum = incompletePlayer + 1
     alert(
-      `ERROR: El jugador #${playerNum} está incompleto.\n\nTodos los 20 jugadores DEBEN tener:\n- Nombre\n- UID (20 dígitos)\n- País\n- Teléfono\n\nPor favor completa todos los campos antes de guardar.`,
+      `ERROR: El jugador #${playerNum} está incompleto.\n\nTodos los jugadores DEBEN tener:\n- Nombre\n- UID (20 dígitos)\n- País\n- Teléfono\n\nPor favor completa todos los campos antes de guardar.`,
     )
     return
   }
@@ -285,7 +307,7 @@ async function handleFormSubmit(e) {
     }
 
     console.log("[v0] Creando equipo en Supabase:", team.name)
-    const createdTeam = await db.createTeam(team)
+    const createdTeam = await window.db.createTeam(team)
 
     if (!createdTeam) {
       throw new Error("Error al crear el equipo")
@@ -294,12 +316,13 @@ async function handleFormSubmit(e) {
     console.log("[v0] Equipo creado con ID:", createdTeam.id)
 
     const playersPromises = players.map((player) => {
-      return db.createPlayer({
+      return window.db.createPlayer({
         name: player.name,
         uid: player.uid,
         team_id: createdTeam.id,
         role: player.role,
         country: player.country,
+        country_code: player.countryCode,
         phone: player.phone,
         kills: 0,
         assists: 0,
@@ -320,7 +343,7 @@ async function handleFormSubmit(e) {
 
 async function assignGroupAutomatically() {
   try {
-    const teams = await db.getTeams()
+    const teams = await window.db.getTeams()
     const groups = { A: 0, B: 0, C: 0, D: 0 }
 
     teams.forEach((team) => {
@@ -367,5 +390,5 @@ function showSuccessModal(teamName, assignedGroup) {
 }
 
 function redirectToHome() {
-  window.location.href = "index.html"
+  window.location.href = "NVYTorneo.html"
 }
