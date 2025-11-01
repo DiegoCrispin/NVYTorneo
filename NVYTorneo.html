@@ -3,144 +3,374 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NoVanity Tournament</title>
+    <title>Admin - NoVanity Tournament</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
 </head>
-<body>
-    <!-- Navigation -->
+<body class="admin-body">
+    <!-- Admin Navigation -->
     <nav id="navbar">
         <div class="nav-container">
             <div class="logo-container">
                 <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Imagen%20de%20WhatsApp%202025-10-25%20a%20las%2017.03.00_8fa1c7d3-JUKNvjNoUY0Tc26yQuZsDJ6CW1VyuD.jpg" alt="NoVanity Logo" class="logo">
-                <span class="brand-name">NoVanity</span>
+                <span class="brand-name">NoVanity Admin</span>
             </div>
             <ul class="nav-menu">
-                <li><a href="#home" class="nav-link">Inicio</a></li>
-                <li><a href="#groups" class="nav-link">Grupos</a></li>
-                <li><a href="#brackets" class="nav-link">Eliminatorias</a></li>
-                <li><a href="#stats" class="nav-link">Estadísticas</a></li>
-                <li><a href="#maps" class="nav-link">Mapas</a></li>
-                <li><a href="registro-equipo.html" class="nav-link">Registro Equipo</a></li>
+                <li><a href="NVYTorneo.html" class="nav-link">Volver al Torneo</a></li>
+                <li><a href="#" id="logoutBtn" class="nav-link" style="color: #ef4444;">Cerrar Sesión</a></li>
             </ul>
-
-            <div class="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">NoVanity Tournament</h1>
-            <p class="hero-subtitle">El torneo más competitivo de la temporada</p>
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <span class="stat-number" id="heroTeamsCount">0</span>
-                    <span class="stat-label">Equipos</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" id="heroPlayersCount">0</span>
-                    <span class="stat-label">Jugadores</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" id="heroMatchesCount">0</span>
-                    <span class="stat-label">Partidas</span>
-                </div>
-            </div>
-        </div>
-        <div class="hero-bg"></div>
-    </section>
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <h3>Panel de Control</h3>
+            <ul class="admin-nav">
+                <li><a href="#hero-stats" class="admin-nav-link active" data-section="hero-stats">Estadísticas Hero</a></li>
+                <li><a href="#teams" class="admin-nav-link" data-section="teams">Equipos</a></li>
+                <li><a href="#registered-teams" class="admin-nav-link" data-section="registered-teams">Equipos Registrados</a></li>
+                <li><a href="#players" class="admin-nav-link" data-section="players">Jugadores</a></li>
+                <li><a href="#player-stats" class="admin-nav-link" data-section="player-stats">Estadísticas Jugadores</a></li>
+                <li><a href="#matches" class="admin-nav-link" data-section="matches">Partidas</a></li>
+                <li><a href="#maps" class="admin-nav-link" data-section="maps">Mapas</a></li>
+                <li><a href="#edit-teams" class="admin-nav-link" data-section="edit-teams">Editar Equipos</a></li>
+            </ul>
+        </aside>
 
-    <!-- Groups Section -->
-    <section id="groups" class="section">
-        <div class="container">
-            <h2 class="section-title">Fase de Grupos</h2>
-            <div class="groups-container" id="groupsContainer">
-                <!-- Groups will be dynamically generated -->
-            </div>
-        </div>
-    </section>
-
-    <!-- Brackets Section -->
-    <section id="brackets" class="section brackets-section">
-        <div class="container">
-            <h2 class="brackets-main-title">PLAYOFFS</h2>
-            <p class="brackets-subtitle">TOURNAMENT</p>
-            <div class="bracket-wrapper">
-                <div id="bracketsContainer" class="brackets-grid">
-                    <!-- Brackets will be dynamically generated -->
-                </div>
-                <div id="championBadge" class="champion-badge">
-                    <div class="champion-badge-inner">
-                        <div class="champion-stars">★★★</div>
-                        <div class="champion-text">CHAMPIONS</div>
+        <main class="admin-main">
+            <!-- Hero Stats Section -->
+            <section id="hero-stats" class="admin-section active">
+                <h2>Estadísticas del Hero</h2>
+                <form id="heroStatsForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Número de Equipos</label>
+                        <input type="number" id="heroTeams" min="0" required>
                     </div>
+                    <div class="form-group">
+                        <label>Número de Jugadores</label>
+                        <input type="number" id="heroPlayers" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Partidas</label>
+                        <input type="number" id="heroMatches" min="0" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Estadísticas</button>
+                </form>
+            </section>
+
+            <!-- Teams Section -->
+            <section id="teams" class="admin-section">
+                <h2>Gestión de Equipos</h2>
+                <form id="teamForm" class="admin-form">
+                    <input type="hidden" id="teamId">
+                    <div class="form-group">
+                        <label>Nombre del Equipo</label>
+                        <input type="text" id="teamName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Grupo (A, B, C, D)</label>
+                        <select id="teamGroup" required>
+                            <option value="A">Grupo A</option>
+                            <option value="B">Grupo B</option>
+                            <option value="C">Grupo C</option>
+                            <option value="D">Grupo D</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Logo (Subir desde PC)</label>
+                        <input type="file" id="teamLogoFile" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Logo URL (o usar archivo de arriba)</label>
+                        <input type="text" id="teamLogo" placeholder="URL del logo">
+                    </div>
+                    <div class="form-group">
+                        <label>Puntos</label>
+                        <input type="number" id="teamPoints" min="0" value="0">
+                    </div>
+                    <button type="submit" class="btn-primary">Guardar Equipo</button>
+                </form>
+                <div id="teamsList" class="admin-list"></div>
+            </section>
+
+            <!-- Registered Teams Section -->
+            <section id="registered-teams" class="admin-section">
+                <h2>Equipos Registrados</h2>
+                <div class="export-controls">
+                    <button id="exportAllBtn" class="btn-primary">📥 Exportar Todos los Equipos</button>
                 </div>
-            </div>
-        </div>
-    </section>
+                <div id="registeredTeamsList" class="admin-list"></div>
+            </section>
 
-    <!-- Statistics Section -->
-    <section id="stats" class="section stats-section">
-        <div class="container">
-            <div class="stats-header">
-                <div class="stats-hashtag left">#TOP3</div>
-                <h2 class="stats-main-title">TOP 3</h2>
-                <div class="stats-hashtag right">#TOP3</div>
-            </div>
-            <div class="stats-filters">
-                <button class="filter-btn active" data-filter="kills">Bajas</button>
-                <button class="filter-btn" data-filter="assists">Asistencias</button>
-                <button class="filter-btn" data-filter="revives">Revividas</button>
-                <button class="filter-btn" data-filter="vehicleDamage">Daño a Vehículos</button>
-            </div>
-            <div id="statsLeaderboard" class="stats-podium">
-                <!-- Top 3 banners will be displayed here -->
-            </div>
-        </div>
-    </section>
+            <!-- Players Section -->
+            <section id="players" class="admin-section">
+                <h2>Gestión de Jugadores</h2>
+                <form id="playerForm" class="admin-form">
+                    <input type="hidden" id="playerId">
+                    <div class="form-group">
+                        <label>Nombre del Jugador</label>
+                        <input type="text" id="playerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>UID (20 dígitos)</label>
+                        <input type="text" id="playerUID" maxlength="20" pattern="\d{20}" placeholder="12345678901234567890" required>
+                        <small>Ingrese exactamente 20 dígitos</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipo</label>
+                        <select id="playerTeam" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Rol</label>
+                        <select id="playerRole" required>
+                            <option value="leader">Líder</option>
+                            <option value="member">Miembro</option>
+                            <option value="substitute">Suplente</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">Guardar Jugador</button>
+                </form>
+                <div id="playersList" class="admin-list"></div>
+            </section>
 
-    <!-- Map Bans Section -->
-    <section id="maps" class="section">
-        <div class="container">
-            <h2 class="section-title">Mapas y Baneos por Partida</h2>
-            <div id="mapBansContainer" class="map-matches-container">
-                <!-- Map bans per match will be displayed here -->
-            </div>
-        </div>
-    </section>
+            <!-- Player Stats Section -->
+            <section id="player-stats" class="admin-section">
+                <h2>Actualizar Estadísticas de Jugador</h2>
+                <form id="statsForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Equipo</label>
+                        <select id="statsTeam" required>
+                            <option value="">Seleccionar equipo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Jugador</label>
+                        <select id="statsPlayer" required>
+                            <option value="">Primero selecciona un equipo</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bajas</label>
+                            <input type="number" id="statsKills" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Asistencias</label>
+                            <input type="number" id="statsAssists" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Revividas</label>
+                            <input type="number" id="statsRevives" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Daño a Vehículos</label>
+                            <input type="number" id="statsVehicleDamage" min="0" value="0">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Estadísticas</button>
+                </form>
+            </section>
 
-    <!-- Team Modal -->
-    <div id="teamModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div id="teamModalContent"></div>
-        </div>
+            <!-- Matches Section -->
+            <section id="matches" class="admin-section">
+                <h2>Gestión de Partidas (Mejor de 5)</h2>
+                <form id="matchForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Fase</label>
+                        <select id="matchPhase" required>
+                            <option value="groups">Grupos</option>
+                            <option value="quarterfinals">Cuartos de Final</option>
+                            <option value="semifinals">Semifinales</option>
+                            <option value="final">Final</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipo 1</label>
+                        <select id="matchTeam1" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipo 2</label>
+                        <select id="matchTeam2" required></select>
+                    </div>
+                    
+                    <div class="match-maps-section">
+                        <h4>Mapas Jugados (Mejor de 5 - hasta 5 mapas)</h4>
+                        <div class="map-game-entry">
+                            <label>Mapa 1</label>
+                            <select class="game-map" data-game="1">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="1">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                        <div class="map-game-entry">
+                            <label>Mapa 2</label>
+                            <select class="game-map" data-game="2">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="2">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                        <div class="map-game-entry">
+                            <label>Mapa 3</label>
+                            <select class="game-map" data-game="3">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="3">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                        <div class="map-game-entry">
+                            <label>Mapa 4</label>
+                            <select class="game-map" data-game="4">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="4">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                        <div class="map-game-entry">
+                            <label>Mapa 5</label>
+                            <select class="game-map" data-game="5">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="5">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="match-winner">
+                        <strong>Ganador de la Serie: <span id="seriesWinner">-</span></strong>
+                    </div>
+                    <button type="submit" class="btn-primary">Guardar Partida</button>
+                </form>
+                <div id="matchesList" class="admin-list"></div>
+            </section>
+
+            <!-- Maps Section -->
+            <section id="maps" class="admin-section">
+                <h2>Gestión de Mapas</h2>
+                <form id="mapForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Nombre del Mapa</label>
+                        <input type="text" id="mapName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagen del Mapa (Subir desde PC)</label>
+                        <input type="file" id="mapImageFile" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Imagen del Mapa (URL o usar archivo de arriba)</label>
+                        <input type="text" id="mapImage" placeholder="URL de la imagen">
+                    </div>
+                    <button type="submit" class="btn-primary">Agregar Mapa</button>
+                </form>
+                <div id="mapsList" class="admin-list"></div>
+
+                <div class="map-bans-admin">
+                    <h3>Votación de Baneo de Mapas</h3>
+                    <form id="mapBanForm" class="admin-form">
+                        <div class="form-group">
+                            <label>Equipo (Líder)</label>
+                            <select id="banTeam" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mapa a Banear</label>
+                            <select id="banMap" required></select>
+                        </div>
+                        <button type="submit" class="btn-primary">Registrar Baneo</button>
+                    </form>
+                    <div id="mapBansList" class="admin-list"></div>
+                </div>
+            </section>
+
+            <!-- Edit Teams Section -->
+            <section id="edit-teams" class="admin-section">
+                <h2>Editar Equipos Registrados</h2>
+                <form id="editTeamGroupForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Seleccionar Equipo para Editar</label>
+                        <select id="editTeamSelect" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Grupo (A, B, C, D)</label>
+                        <select id="editTeamGroup" required>
+                            <option value="A">Grupo A</option>
+                            <option value="B">Grupo B</option>
+                            <option value="C">Grupo C</option>
+                            <option value="D">Grupo D</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Puntos</label>
+                        <input type="number" id="editTeamPoints" min="0" value="0">
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Grupo y Puntos</button>
+                </form>
+
+                <h3 style="margin-top: 2rem;">Editar Jugadores del Equipo</h3>
+                <form id="editPlayerForm" class="admin-form">
+                    <input type="hidden" id="editPlayerTeamId">
+                    <input type="hidden" id="editPlayerIndex">
+                    
+                    <div class="form-group">
+                        <label>Seleccionar Jugador para Editar</label>
+                        <select id="editPlayerSelect" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Jugador</label>
+                        <input type="text" id="editPlayerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>UID (20 dígitos)</label>
+                        <input type="text" id="editPlayerUID" maxlength="20" pattern="\d{20}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>País/Código</label>
+                        <input type="text" id="editPlayerCountry" placeholder="ej: colombia, mexico">
+                    </div>
+                    <div class="form-group">
+                        <label>Código de País (Teléfono)</label>
+                        <input type="text" id="editPlayerCountryCode" placeholder="ej: +57, +34">
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="text" id="editPlayerPhone" placeholder="número sin el código">
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Jugador</button>
+                </form>
+                
+                <div id="editTeamPlayersList" class="admin-list" style="margin-top: 2rem;"></div>
+            </section>
+        </main>
     </div>
 
-    <div class="animated-background">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-        <div class="shape shape-4"></div>
-        <div class="shape shape-5"></div>
-    </div>
-
-    <!-- Agregar scripts de Supabase y configuración -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script>
-        window.SUPABASE_CONFIG = {
-            url: 'https://kpgouawqwtoxxvzwkzhv.supabase.co',
-            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwZ291YXdxd3RveHh2endremh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMDkwNDIsImV4cCI6MjA3NzU4NTA0Mn0.b25CsiFl4wEs-i7aCXAH4F0E3AKDKUBo1UQs047Mjt8'
+        // Check authentication before loading admin panel
+        if (sessionStorage.getItem('nvyAdminAuth') !== 'true') {
+            window.location.href = 'login.html';
         }
+
+        // Logout functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    sessionStorage.removeItem('nvyAdminAuth');
+                    window.location.href = 'login.html';
+                });
+            }
+        });
     </script>
-    <script src="js/supabase-client.js"></script>
-    <script src="js/script.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>
+
+
 
