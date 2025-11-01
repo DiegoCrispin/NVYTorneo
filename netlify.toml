@@ -1,12 +1,16 @@
 [build]
   command = ""
-  publish = "."
-  
+  publish = "public"
+
 [build.environment]
-  NODE_VERSION = "22"
-  NPM_FLAGS = "--ignore-scripts"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    disable = true
 
 [[redirects]]
   from = "/*"
-  to = "/NVYTorneo.html"
+  to = "/index.html"
   status = 200
