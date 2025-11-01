@@ -20,6 +20,21 @@ let tournamentState = {
   champion: null,
 }
 
+function waitForDB() {
+  return new Promise((resolve) => {
+    if (window.db && window.supabaseClient) {
+      resolve()
+    } else {
+      const checkDB = setInterval(() => {
+        if (window.db && window.supabaseClient) {
+          clearInterval(checkDB)
+          resolve()
+        }
+      }, 100)
+    }
+  })
+}
+
 async function loadAllData() {
   try {
     console.log("[v0] Loading all data from Supabase...")
@@ -34,6 +49,13 @@ async function loadAllData() {
         window.db.getHeroStats(),
         window.db.getTournamentState(),
       ])
+
+    console.log("[v0] Datos cargados:", {
+      teams: teamsData.length,
+      players: playersData.length,
+      matches: matchesData.length,
+      maps: mapsData.length,
+    })
 
     registeredTeams = teamsData.map((team) => ({
       id: team.id,
@@ -121,9 +143,16 @@ async function loadAllData() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  console.log("[v0] DOMContentLoaded - Esperando DB")
+  await waitForDB()
+  console.log("[v0] DB disponible, cargando datos")
+
   await loadAllData()
 
+  console.log("[v0] Inicializando navegación")
   initAdminNavigation()
+
+  console.log("[v0] Cargando secciones")
   loadHeroStats()
   loadTeams()
   loadPlayers()
@@ -139,6 +168,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   subscribeToRealtimeChanges()
+  console.log("[v0] Admin panel inicializado completamente")
 })
 
 function subscribeToRealtimeChanges() {
