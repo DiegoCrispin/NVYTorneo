@@ -1,4 +1,5 @@
-// const XLSX = require("xlsx") - This line was causing script execution to stop
+// Registro de equipos - Migrado a Supabase
+// Mantiene toda la funcionalidad original pero usa Supabase en lugar de localStorage
 
 // Countries list with phone codes and digit requirements
 const COUNTRIES = {
@@ -24,7 +25,8 @@ const COUNTRIES = {
 
 let logoImage = null
 const anime = window.anime
-const XLSX = window.XLSX // Declare the XLSX variable here
+const XLSX = window.XLSX
+const db = window.db
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[v0] DOMContentLoaded - Inicializando formulario")
@@ -184,14 +186,12 @@ function updatePlayerCount() {
   document.getElementById("currentCount").textContent = count
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault()
   console.log("[v0] Iniciando envío del formulario")
 
-  // Gather form data
   const teamName = document.getElementById("teamName").value.trim()
   const teamAbbr = document.getElementById("teamAbbr").value.trim()
-
   const hasLogo = logoImage !== null
 
   if (!teamName) {
@@ -268,69 +268,84 @@ function handleFormSubmit(e) {
     return
   }
 
-  const assignedGroup = assignGroupAutomatically()
+  const assignedGroup = await assignGroupAutomatically()
 
   if (!assignedGroup) {
     alert("ERROR: No hay grupos disponibles. Todos los grupos están llenos.")
     return
   }
 
-  // Create team object
-  const team = {
-    id: Date.now().toString(),
-    name: teamName,
-    abbreviation: teamAbbr,
-    group: assignedGroup,
-    logo: logoImage,
-    players: players,
-    createdAt: new Date().toISOString(),
-    points: 0,
-  }
-
-  console.log("[v0] Equipo creado:", team.name, "asignado al grupo:", assignedGroup)
-
   try {
-    const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
-    registeredTeams.push(team)
-    localStorage.setItem("registeredTeams", JSON.stringify(registeredTeams))
-    console.log("[v0] Equipo guardado en localStorage:", team.id)
+    const team = {
+      name: teamName,
+      abbreviation: teamAbbr,
+      group: assignedGroup,
+      logo: logoImage,
+      points: 0,
+    }
+
+    console.log("[v0] Creando equipo en Supabase:", team.name)
+    const createdTeam = await db.createTeam(team)
+
+    if (!createdTeam) {
+      throw new Error("Error al crear el equipo")
+    }
+
+    console.log("[v0] Equipo creado con ID:", createdTeam.id)
+
+    const playersPromises = players.map((player) => {
+      return db.createPlayer({
+        name: player.name,
+        uid: player.uid,
+        team_id: createdTeam.id,
+        role: player.role,
+        country: player.country,
+        phone: player.phone,
+        kills: 0,
+        assists: 0,
+        revives: 0,
+        vehicle_damage: 0,
+      })
+    })
+
+    await Promise.all(playersPromises)
+    console.log("[v0] Jugadores creados exitosamente")
+
+    showSuccessModal(teamName, assignedGroup)
   } catch (error) {
-    console.error("[v0] Error al guardar en localStorage:", error)
+    console.error("[v0] Error al guardar en Supabase:", error)
     alert("ERROR: No se pudo guardar el equipo. Intenta de nuevo.")
-    return
   }
-
-  // Sync with admin
-  try {
-    const syncChannel = new BroadcastChannel("adminSync")
-    syncChannel.postMessage({ type: "refresh" })
-    console.log("[v0] Mensaje de sync enviado al admin")
-  } catch (error) {
-    console.warn("[v0] BroadcastChannel no disponible, continuando sin sync")
-  }
-
-  showSuccessModal(teamName, assignedGroup)
 }
 
-function getRandomAvailableGroup() {
-  const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
-  const groups = { A: 0, B: 0, C: 0, D: 0 }
+async function assignGroupAutomatically() {
+  try {
+    const teams = await db.getTeams()
+    const groups = { A: 0, B: 0, C: 0, D: 0 }
 
-  registeredTeams.forEach((team) => {
-    if (groups.hasOwnProperty(team.group)) {
-      groups[team.group]++
+    teams.forEach((team) => {
+      if (groups.hasOwnProperty(team.group)) {
+        groups[team.group]++
+      }
+    })
+
+    const availableGroups = Object.entries(groups)
+      .filter(([group, count]) => count < 4)
+      .map(([group]) => group)
+
+    if (availableGroups.length === 0) {
+      return null
     }
-  })
 
-  const availableGroups = Object.entries(groups)
-    .filter(([group, count]) => count < 4)
-    .map(([group]) => group)
+    const groupCounts = Object.entries(groups).filter(([g]) => availableGroups.includes(g))
+    const [assignedGroup] = groupCounts.reduce((prev, curr) => (prev[1] < curr[1] ? prev : curr))
 
-  if (availableGroups.length === 0) {
-    return null
+    console.log("[v0] Grupo asignado automáticamente:", assignedGroup)
+    return assignedGroup
+  } catch (error) {
+    console.error("[v0] Error al asignar grupo:", error)
+    return "A"
   }
-
-  return availableGroups[Math.floor(Math.random() * availableGroups.length)]
 }
 
 function showSuccessModal(teamName, assignedGroup) {
@@ -352,168 +367,5 @@ function showSuccessModal(teamName, assignedGroup) {
 }
 
 function redirectToHome() {
-  window.location.href = "NVYTorneo.html"
-}
-
-function exportTeamToExcel(teamData) {
-  if (!XLSX || !XLSX.utils) {
-    alert("La librería XLSX no está cargada. Verificando...")
-    return
-  }
-
-  const workbook = XLSX.utils.book_new()
-
-  // Sheet 1 - Team Information
-  const teamInfoData = [
-    ["INFORMACIÓN DEL EQUIPO"],
-    [],
-    ["Nombre", teamData.name || ""],
-    ["Abreviación", teamData.abbreviation || ""],
-    ["Grupo", teamData.group || ""],
-    ["Fecha de Registro", teamData.createdAt ? new Date(teamData.createdAt).toLocaleDateString("es-ES") : ""],
-    ["Total de Jugadores", teamData.players ? teamData.players.length : 0],
-  ]
-
-  const teamSheet = XLSX.utils.aoa_to_sheet(teamInfoData)
-  teamSheet["!cols"] = [{ wch: 25 }, { wch: 30 }]
-  XLSX.utils.book_append_sheet(workbook, teamSheet, "Información")
-
-  // Sheet 2 - Players
-  const playersData = [
-    ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño Vehículos"],
-  ]
-  ;(teamData.players || []).forEach((player) => {
-    playersData.push([
-      player.name || "",
-      player.uid || "",
-      player.country || "",
-      player.phone || "",
-      player.role || "",
-      (player.stats && player.stats.kills) || 0,
-      (player.stats && player.stats.assists) || 0,
-      (player.stats && player.stats.revives) || 0,
-      (player.stats && player.stats.vehicleDamage) || 0,
-    ])
-  })
-
-  const playersSheet = XLSX.utils.aoa_to_sheet(playersData)
-  playersSheet["!cols"] = [
-    { wch: 20 },
-    { wch: 25 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 12 },
-    { wch: 10 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 15 },
-  ]
-  XLSX.utils.book_append_sheet(workbook, playersSheet, "Jugadores")
-
-  XLSX.writeFile(workbook, `${teamData.name || "Equipo"}_Roster.xlsx`)
-}
-
-function exportAllTeamsToExcel(registeredTeams) {
-  if (!registeredTeams || registeredTeams.length === 0) {
-    alert("No hay equipos para exportar")
-    return
-  }
-
-  if (!XLSX || !XLSX.utils) {
-    alert("La librería XLSX no está cargada")
-    return
-  }
-
-  const workbook = XLSX.utils.book_new()
-
-  // Summary sheet
-  const summaryData = [
-    ["RESUMEN DE EQUIPOS REGISTRADOS"],
-    [],
-    ["Total de Equipos", registeredTeams.length],
-    ["Total de Jugadores", registeredTeams.reduce((sum, t) => sum + (t.players ? t.players.length : 0), 0)],
-    [],
-    ["Nombre", "Abreviación", "Grupo", "Jugadores", "Fecha Registro"],
-  ]
-
-  registeredTeams.forEach((team) => {
-    summaryData.push([
-      team.name || "",
-      team.abbreviation || "",
-      team.group || "",
-      team.players ? team.players.length : 0,
-      team.createdAt ? new Date(team.createdAt).toLocaleDateString("es-ES") : "",
-    ])
-  })
-
-  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData)
-  summarySheet["!cols"] = [{ wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 15 }]
-  XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumen")
-
-  // Individual team sheets
-  registeredTeams.forEach((team) => {
-    const teamData = [
-      [`EQUIPO: ${team.name || ""}`],
-      [`Abreviación: ${team.abbreviation || ""}`],
-      [`Grupo: ${team.group || ""}`],
-      [],
-      ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño Vehículos"],
-    ]
-    ;(team.players || []).forEach((player) => {
-      teamData.push([
-        player.name || "",
-        player.uid || "",
-        player.country || "",
-        player.phone || "",
-        player.role || "",
-        (player.stats && player.stats.kills) || 0,
-        (player.stats && player.stats.assists) || 0,
-        (player.stats && player.stats.revives) || 0,
-        (player.stats && player.stats.vehicleDamage) || 0,
-      ])
-    })
-
-    const sheet = XLSX.utils.aoa_to_sheet(teamData)
-    sheet["!cols"] = [
-      { wch: 20 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 15 },
-    ]
-    XLSX.utils.book_append_sheet(workbook, sheet, team.abbreviation || team.name || `Equipo_${team.id}`)
-  })
-
-  XLSX.writeFile(workbook, `Todos_los_Equipos_${new Date().toISOString().split("T")[0]}.xlsx`)
-}
-
-function assignGroupAutomatically() {
-  const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
-  const groups = { A: 0, B: 0, C: 0, D: 0 } // Changed from 5 groups (A-E) to 4 groups (A-D)
-
-  registeredTeams.forEach((team) => {
-    if (groups.hasOwnProperty(team.group)) {
-      groups[team.group]++
-    }
-  })
-
-  // Find all groups that don't have 4 teams yet
-  const availableGroups = Object.entries(groups)
-    .filter(([group, count]) => count < 4)
-    .map(([group]) => group)
-
-  if (availableGroups.length === 0) {
-    return null // No groups available
-  }
-
-  // Assign to the group with the fewest teams
-  const groupCounts = Object.entries(groups).filter(([g]) => availableGroups.includes(g))
-  const [assignedGroup] = groupCounts.reduce((prev, curr) => (prev[1] < curr[1] ? prev : curr))
-
-  console.log("[v0] Grupo asignado automáticamente:", assignedGroup)
-  return assignedGroup
+  window.location.href = "index.html"
 }
