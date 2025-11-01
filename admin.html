@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - NoVanity Tournament</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-body">
+    <!-- Admin Navigation -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <div class="logo-container">
+                <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Imagen%20de%20WhatsApp%202025-10-25%20a%20las%2017.03.00_8fa1c7d3-JUKNvjNoUY0Tc26yQuZsDJ6CW1VyuD.jpg" alt="NoVanity Logo" class="logo">
+                <span class="brand-name">NoVanity Admin</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="NVYTorneo.html" class="nav-link">Volver al Torneo</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <h3>Panel de Control</h3>
+            <ul class="admin-nav">
+                <li><a href="#hero-stats" class="admin-nav-link active" data-section="hero-stats">Estadísticas Hero</a></li>
+                <li><a href="#teams" class="admin-nav-link" data-section="teams">Equipos</a></li>
+                <li><a href="#registered-teams" class="admin-nav-link" data-section="registered-teams">Equipos Registrados</a></li>
+                <li><a href="#players" class="admin-nav-link" data-section="players">Jugadores</a></li>
+                <li><a href="#player-stats" class="admin-nav-link" data-section="player-stats">Estadísticas Jugadores</a></li>
+                <li><a href="#matches" class="admin-nav-link" data-section="matches">Partidas</a></li>
+                <li><a href="#maps" class="admin-nav-link" data-section="maps">Mapas</a></li>
+                <li><a href="#edit-teams" class="admin-nav-link" data-section="edit-teams">Editar Equipos</a></li>
+            </ul>
+        </aside>
+
+        <main class="admin-main">
+            <!-- Hero Stats Section -->
+            <section id="hero-stats" class="admin-section active">
+                <h2>Estadísticas del Hero</h2>
+                <form id="heroStatsForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Número de Equipos</label>
+                        <input type="number" id="heroTeams" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Jugadores</label>
+                        <input type="number" id="heroPlayers" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Número de Partidas</label>
+                        <input type="number" id="heroMatches" min="0" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Estadísticas</button>
+                </form>
+            </section>
+
+            <!-- Teams Section -->
+            <section id="teams" class="admin-section">
+                <h2>Gestión de Equipos</h2>
+                <form id="teamForm" class="admin-form">
+                    <input type="hidden" id="teamId">
+                    <div class="form-group">
+                        <label>Nombre del Equipo</label>
+                        <input type="text" id="teamName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Grupo (A, B, C, D)</label>
+                        <select id="teamGroup" required>
+                            <option value="A">Grupo A</option>
+                            <option value="B">Grupo B</option>
+                            <option value="C">Grupo C</option>
+                            <option value="D">Grupo D</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Logo (Subir desde PC)</label>
+                        <input type="file" id="teamLogoFile" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Logo URL (o usar archivo de arriba)</label>
+                        <input type="text" id="teamLogo" placeholder="URL del logo">
+                    </div>
+                    <div class="form-group">
+                        <label>Puntos</label>
+                        <input type="number" id="teamPoints" min="0" value="0">
+                    </div>
+                    <button type="submit" class="btn-primary">Guardar Equipo</button>
+                </form>
+                <div id="teamsList" class="admin-list"></div>
+            </section>
+
+            <!-- Registered Teams Section -->
+            <section id="registered-teams" class="admin-section">
+                <h2>Equipos Registrados</h2>
+                <div class="export-controls">
+                    <button id="exportAllBtn" class="btn-primary">📥 Exportar Todos los Equipos</button>
+                </div>
+                <div id="registeredTeamsList" class="admin-list"></div>
+            </section>
+
+            <!-- Players Section -->
+            <section id="players" class="admin-section">
+                <h2>Gestión de Jugadores</h2>
+                <form id="playerForm" class="admin-form">
+                    <input type="hidden" id="playerId">
+                    <div class="form-group">
+                        <label>Nombre del Jugador</label>
+                        <input type="text" id="playerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>UID (20 dígitos)</label>
+                        <input type="text" id="playerUID" maxlength="20" pattern="\d{20}" placeholder="12345678901234567890" required>
+                        <small>Ingrese exactamente 20 dígitos</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipo</label>
+                        <select id="playerTeam" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Rol</label>
+                        <select id="playerRole" required>
+                            <option value="leader">Líder</option>
+                            <option value="member">Miembro</option>
+                            <option value="substitute">Suplente</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">Guardar Jugador</button>
+                </form>
+                <div id="playersList" class="admin-list"></div>
+            </section>
+
+            <!-- Player Stats Section -->
+            <section id="player-stats" class="admin-section">
+                <h2>Actualizar Estadísticas de Jugador</h2>
+                <form id="statsForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Equipo</label>
+                        <select id="statsTeam" required>
+                            <option value="">Seleccionar equipo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Jugador</label>
+                        <select id="statsPlayer" required>
+                            <option value="">Primero selecciona un equipo</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bajas</label>
+                            <input type="number" id="statsKills" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Asistencias</label>
+                            <input type="number" id="statsAssists" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Revividas</label>
+                            <input type="number" id="statsRevives" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Daño a Vehículos</label>
+                            <input type="number" id="statsVehicleDamage" min="0" value="0">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Estadísticas</button>
+                </form>
+            </section>
+
+            <!-- Matches Section -->
+            <section id="matches" class="admin-section">
+                <h2>Gestión de Partidas (Mejor de 5)</h2>
+                <form id="matchForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Fase</label>
+                        <select id="matchPhase" required>
+                            <option value="groups">Grupos</option>
+                            <option value="quarterfinals">Cuartos de Final</option>
+                            <option value="semifinals">Semifinales</option>
+                            <option value="final">Final</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipo 1</label>
+                        <select id="matchTeam1" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Equipo 2</label>
+                        <select id="matchTeam2" required></select>
+                    </div>
+                    
+                    <div class="match-maps-section">
+                        <h4>Mapas Jugados (Mejor de 5 - hasta 5 mapas)</h4>
+                        <div class="map-game-entry">
+                            <label>Mapa 1</label>
+                            <select class="game-map" data-game="1">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="1">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                        <div class="map-game-entry">
+                            <label>Mapa 2</label>
+                            <select class="game-map" data-game="2">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="2">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                        <div class="map-game-entry">
+                            <label>Mapa 3</label>
+                            <select class="game-map" data-game="3">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="3">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                        <div class="map-game-entry">
+                            <label>Mapa 4</label>
+                            <select class="game-map" data-game="4">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="4">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                        <div class="map-game-entry">
+                            <label>Mapa 5</label>
+                            <select class="game-map" data-game="5">
+                                <option value="">No jugado</option>
+                            </select>
+                            <select class="game-winner" data-game="5">
+                                <option value="">Ganador</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="match-winner">
+                        <strong>Ganador de la Serie: <span id="seriesWinner">-</span></strong>
+                    </div>
+                    <button type="submit" class="btn-primary">Guardar Partida</button>
+                </form>
+                <div id="matchesList" class="admin-list"></div>
+            </section>
+
+            <!-- Maps Section -->
+            <section id="maps" class="admin-section">
+                <h2>Gestión de Mapas</h2>
+                <form id="mapForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Nombre del Mapa</label>
+                        <input type="text" id="mapName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagen del Mapa (Subir desde PC)</label>
+                        <input type="file" id="mapImageFile" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Imagen del Mapa (URL o usar archivo de arriba)</label>
+                        <input type="text" id="mapImage" placeholder="URL de la imagen">
+                    </div>
+                    <button type="submit" class="btn-primary">Agregar Mapa</button>
+                </form>
+                <div id="mapsList" class="admin-list"></div>
+
+                <div class="map-bans-admin">
+                    <h3>Votación de Baneo de Mapas</h3>
+                    <form id="mapBanForm" class="admin-form">
+                        <div class="form-group">
+                            <label>Equipo (Líder)</label>
+                            <select id="banTeam" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mapa a Banear</label>
+                            <select id="banMap" required></select>
+                        </div>
+                        <button type="submit" class="btn-primary">Registrar Baneo</button>
+                    </form>
+                    <div id="mapBansList" class="admin-list"></div>
+                </div>
+            </section>
+
+            <!-- Edit Teams Section -->
+            <section id="edit-teams" class="admin-section">
+                <h2>Editar Equipos Registrados</h2>
+                <form id="editTeamGroupForm" class="admin-form">
+                    <div class="form-group">
+                        <label>Seleccionar Equipo para Editar</label>
+                        <select id="editTeamSelect" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Grupo (A, B, C, D)</label>
+                        <select id="editTeamGroup" required>
+                            <option value="A">Grupo A</option>
+                            <option value="B">Grupo B</option>
+                            <option value="C">Grupo C</option>
+                            <option value="D">Grupo D</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Puntos</label>
+                        <input type="number" id="editTeamPoints" min="0" value="0">
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Grupo y Puntos</button>
+                </form>
+
+                <h3 style="margin-top: 2rem;">Editar Jugadores del Equipo</h3>
+                <form id="editPlayerForm" class="admin-form">
+                    <input type="hidden" id="editPlayerTeamId">
+                    <input type="hidden" id="editPlayerIndex">
+                    
+                    <div class="form-group">
+                        <label>Seleccionar Jugador para Editar</label>
+                        <select id="editPlayerSelect" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre del Jugador</label>
+                        <input type="text" id="editPlayerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>UID (20 dígitos)</label>
+                        <input type="text" id="editPlayerUID" maxlength="20" pattern="\d{20}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>País/Código</label>
+                        <input type="text" id="editPlayerCountry" placeholder="ej: colombia, mexico">
+                    </div>
+                    <div class="form-group">
+                        <label>Código de País (Teléfono)</label>
+                        <input type="text" id="editPlayerCountryCode" placeholder="ej: +57, +34">
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="text" id="editPlayerPhone" placeholder="número sin el código">
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Jugador</button>
+                </form>
+                
+                <div id="editTeamPlayersList" class="admin-list" style="margin-top: 2rem;"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

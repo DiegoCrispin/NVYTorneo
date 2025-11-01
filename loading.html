@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoVanity Tournament - Cargando</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap");
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8b5cf6;
+            --primary-dark: #6d28d9;
+            --secondary: #ec4899;
+            --accent: #f59e0b;
+            --gold: #d4af37;
+            --dark: #0f0a1e;
+            --dark-light: #1a1333;
+            --text: #e5e7eb;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0f0a1e 0%, #1a0b2e 50%, #0f0a1e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+        }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3rem;
+            z-index: 10;
+            position: relative;
+        }
+
+        /* Logo Animation - Now scales from half-screen to small */
+        .logo-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%);
+            filter: blur(30px);
+        }
+
+        .logo-glow-secondary {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%);
+            filter: blur(40px);
+        }
+
+        /* Logo image - Using the NVY logo */
+        .logo-image {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            background-image: url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/NVY_LOGO_PNG-yjqH6w574k5scAcI4l1q19QzXFXC55.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            filter: drop-shadow(0 0 30px rgba(236, 72, 153, 0.6)) drop-shadow(0 0 60px rgba(139, 92, 246, 0.4));
+        }
+
+        /* Loading Text */
+        .loading-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        /* Animated Progress Bar */
+        .progress-bar-container {
+            width: 300px;
+            height: 6px;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #ec4899, #f59e0b);
+            border-radius: 10px;
+            width: 0%;
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.8);
+        }
+
+        /* Loading Dots */
+        .loading-dots {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--secondary);
+            opacity: 0.4;
+        }
+
+        /* Background animations */
+        .bg-shape {
+            position: fixed;
+            border-radius: 50%;
+            opacity: 0.1;
+            z-index: 1;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--secondary), transparent);
+            top: -150px;
+            right: -150px;
+        }
+
+        .shape-2 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--primary), transparent);
+            bottom: -200px;
+            left: -200px;
+        }
+
+        .shape-3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, var(--gold), transparent);
+            top: 50%;
+            left: 5%;
+        }
+
+        @media (max-width: 768px) {
+            .loading-container {
+                gap: 2rem;
+            }
+
+            .logo-wrapper {
+                width: 200px;
+                height: 200px;
+            }
+
+            .logo-image {
+                width: 180px;
+                height: 180px;
+            }
+
+            .loading-text {
+                font-size: 1.5rem;
+            }
+
+            .progress-bar-container {
+                width: 250px;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+</head>
+<body>
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
+    <div class="loading-container">
+        <div class="logo-wrapper">
+            <div class="logo-glow"></div>
+            <div class="logo-glow-secondary"></div>
+            <div class="logo-image"></div>
+        </div>
+
+        <div class="loading-text">NoVanity Tournament</div>
+
+        <div class="loading-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        /* Improved animation - Logo scales from large to small while loading */
+        anime({
+            targets: '.logo-image',
+            scale: [1.2, 1.0, 0.8],
+            duration: 3500,
+            easing: 'easeInOutQuad',
+            loop: true
+        });
+
+        // Animate glow effect
+        anime({
+            targets: '.logo-glow',
+            opacity: [0.3, 0.6, 0.3],
+            duration: 3000,
+            easing: 'easeInOutQuad',
+            loop: true
+        });
+
+        // Animate secondary glow
+        anime({
+            targets: '.logo-glow-secondary',
+            opacity: [0.1, 0.4, 0.1],
+            duration: 4000,
+            easing: 'easeInOutQuad',
+            loop: true
+        });
+
+        // Animate dots
+        anime({
+            targets: '.dot',
+            opacity: [0.4, 1, 0.4],
+            duration: 1500,
+            easing: 'easeInOutQuad',
+            loop: true,
+            delay: anime.stagger(150)
+        });
+
+        // Animate progress bar
+        anime({
+            targets: '.progress-bar-fill',
+            width: ['0%', '100%'],
+            duration: 3000,
+            easing: 'easeInOutQuad',
+            loop: true,
+            direction: 'alternate'
+        });
+
+        // Animate background shapes
+        anime({
+            targets: '.shape-1',
+            translateX: [0, 50, 0],
+            translateY: [0, -50, 0],
+            duration: 20000,
+            easing: 'linear',
+            loop: true
+        });
+
+        anime({
+            targets: '.shape-2',
+            translateX: [0, -40, 0],
+            translateY: [0, 60, 0],
+            duration: 25000,
+            easing: 'linear',
+            loop: true
+        });
+
+        anime({
+            targets: '.shape-3',
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.2, 0.1],
+            duration: 18000,
+            easing: 'easeInOutQuad',
+            loop: true
+        });
+
+        // Redirect to index after 5 seconds
+        setTimeout(() => {
+            anime({
+                targets: '.loading-container',
+                opacity: [1, 0],
+                duration: 800,
+                easing: 'easeInQuad',
+                complete: () => {
+                    window.location.href = 'index.html';
+                }
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Equipo - NoVanity Tournament</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- XLSX para exportar Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <div class="logo-container">
+                <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Imagen%20de%20WhatsApp%202025-10-25%20a%20las%2017.03.00_8fa1c7d3-JUKNvjNoUY0Tc26yQuZsDJ6CW1VyuD.jpg" alt="NoVanity Logo" class="logo">
+                <span class="brand-name">NoVanity</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="NVYTorneo.html" class="nav-link">Inicio</a></li>
+                <li><a href="index.html#groups" class="nav-link">Grupos</a></li>
+                <li><a href="index.html#brackets" class="nav-link">Eliminatorias</a></li>
+                <li><a href="index.html#stats" class="nav-link">Estadísticas</a></li>
+                <li><a href="#" class="nav-link active">Registro Equipo</a></li>
+                <li><a href="admin.html" class="nav-link admin-link">Admin</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="registro-main">
+        <section class="registro-section">
+            <div class="container">
+                <h1 class="registro-title">Registro de Equipo</h1>
+                <p class="registro-subtitle">Completa el formulario para registrar tu equipo en el torneo</p>
+
+                <form id="registroForm" class="registro-form">
+                    <!-- Team Info Section -->
+                    <div class="form-section">
+                        <h2 class="form-section-title">Información del Equipo</h2>
+
+                        <div class="form-group">
+                            <label for="teamName">Nombre del Equipo *</label>
+                            <input type="text" id="teamName" name="teamName" required maxlength="50" placeholder="Ej: Team Phoenix">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teamAbbr">Abreviación (3 letras) *</label>
+                                <input type="text" id="teamAbbr" name="teamAbbr" required maxlength="3" placeholder="Ej: PHX" pattern="^[A-Z]{3}$">
+                                <small>Máximo 3 letras mayúsculas</small>
+                            </div>
+
+                        </div>
+
+                        <div class="form-group">
+                            <label for="teamLogo">Logo del Equipo *</label>
+                            <input type="file" id="teamLogo" name="teamLogo" accept="image/*" required>
+                            <div id="logoPreview" class="logo-preview"></div>
+                        </div>
+                    </div>
+
+                    <!-- Players Section -->
+                    <div class="form-section">
+                        <h2 class="form-section-title">Roster del Equipo (20-24 jugadores)</h2>
+                        <p class="form-section-info">Mínimo 20 jugadores (incluyendo 1 líder), máximo 24 (con 4 suplentes)</p>
+
+                        <div id="playersContainer" class="players-container">
+                            <!-- Initial player inputs -->
+                        </div>
+
+                        <div class="players-controls">
+                            <button type="button" id="addPlayerBtn" class="btn-secondary">+ Agregar Jugador</button>
+                            <button type="button" id="removePlayerBtn" class="btn-danger">- Eliminar Jugador</button>
+                        </div>
+
+                        <div class="players-count">
+                            <span id="currentCount">0</span> / <span id="maxCount">24</span> Jugadores
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-large">Registrar Equipo</button>
+                        <button type="button" class="btn-secondary btn-large" onclick="window.history.back()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <div class="animated-background">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+        <div class="shape shape-5"></div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-success">
+                <div class="success-icon">✓</div>
+                <h2>Equipo Registrado</h2>
+                <p id="successMessage"></p>
+                <button type="button" class="btn-primary" onclick="redirectToHome()">Ir al Inicio</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="registro-equipo.js"></script>
+</body>
+</html>

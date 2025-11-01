@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoVanity Tournament</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- CHANGE: Añadir XLSX CDN para exportar Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <div class="logo-container">
+                <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Imagen%20de%20WhatsApp%202025-10-25%20a%20las%2017.03.00_8fa1c7d3-JUKNvjNoUY0Tc26yQuZsDJ6CW1VyuD.jpg" alt="NoVanity Logo" class="logo">
+                <span class="brand-name">NoVanity</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">Inicio</a></li>
+                <li><a href="#groups" class="nav-link">Grupos</a></li>
+                <li><a href="#brackets" class="nav-link">Eliminatorias</a></li>
+                <li><a href="#stats" class="nav-link">Estadísticas</a></li>
+                <li><a href="#maps" class="nav-link">Mapas</a></li>
+                <li><a href="registro-equipo.html" class="nav-link">Registro Equipo</a></li>
+                <li><a href="admin.html" class="nav-link admin-link">Admin</a></li>
+            </ul>
+
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">NoVanity Tournament</h1>
+            <p class="hero-subtitle">El torneo más competitivo de la temporada</p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="heroTeamsCount">0</span>
+                    <span class="stat-label">Equipos</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="heroPlayersCount">0</span>
+                    <span class="stat-label">Jugadores</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="heroMatchesCount">0</span>
+                    <span class="stat-label">Partidas</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-bg"></div>
+    </section>
+
+    <!-- Groups Section -->
+    <section id="groups" class="section">
+        <div class="container">
+            <h2 class="section-title">Fase de Grupos</h2>
+            <div class="groups-container" id="groupsContainer">
+                <!-- Groups will be dynamically generated -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Brackets Section -->
+    <section id="brackets" class="section brackets-section">
+        <div class="container">
+            <h2 class="brackets-main-title">PLAYOFFS</h2>
+            <p class="brackets-subtitle">TOURNAMENT</p>
+            <div class="bracket-wrapper">
+                <div id="bracketsContainer" class="brackets-grid">
+                    <!-- Brackets will be dynamically generated -->
+                </div>
+                <div id="championBadge" class="champion-badge">
+                    <div class="champion-badge-inner">
+                        <div class="champion-stars">★★★</div>
+                        <div class="champion-text">CHAMPIONS</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section id="stats" class="section stats-section">
+        <div class="container">
+            <div class="stats-header">
+                <div class="stats-hashtag left">#TOP3</div>
+                <h2 class="stats-main-title">TOP 3</h2>
+                <div class="stats-hashtag right">#TOP3</div>
+            </div>
+            <div class="stats-filters">
+                <button class="filter-btn active" data-filter="kills">Bajas</button>
+                <button class="filter-btn" data-filter="assists">Asistencias</button>
+                <button class="filter-btn" data-filter="revives">Revividas</button>
+                <button class="filter-btn" data-filter="vehicleDamage">Daño a Vehículos</button>
+            </div>
+            <div id="statsLeaderboard" class="stats-podium">
+                <!-- Top 3 banners will be displayed here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Map Bans Section -->
+    <section id="maps" class="section">
+        <div class="container">
+            <h2 class="section-title">Mapas y Baneos por Partida</h2>
+            <div id="mapBansContainer" class="map-matches-container">
+                <!-- Map bans per match will be displayed here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Modal -->
+    <div id="teamModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="teamModalContent"></div>
+        </div>
+    </div>
+
+    <div class="animated-background">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+        <div class="shape shape-5"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
