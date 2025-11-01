@@ -1,0 +1,8 @@
+[build]
+  # No build command needed for static HTML
+  publish = "."
+  
+[[redirects]]
+  from = "/*"
+  to = "/NVYTorneo.html"
+  status = 200
