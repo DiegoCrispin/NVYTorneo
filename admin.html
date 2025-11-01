@@ -16,6 +16,7 @@
             </div>
             <ul class="nav-menu">
                 <li><a href="NVYTorneo.html" class="nav-link">Volver al Torneo</a></li>
+                <li><a href="#" id="logoutBtn" class="nav-link" style="color: #ef4444;">Cerrar Sesión</a></li>
             </ul>
         </div>
     </nav>
@@ -349,6 +350,25 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script>
+        // Check authentication before loading admin panel
+        if (sessionStorage.getItem('nvyAdminAuth') !== 'true') {
+            window.location.href = 'login.html';
+        }
+
+        // Logout functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    sessionStorage.removeItem('nvyAdminAuth');
+                    window.location.href = 'login.html';
+                });
+            }
+        });
+    </script>
     <script src="admin.js"></script>
 </body>
 </html>
+
