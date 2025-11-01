@@ -352,7 +352,7 @@ function showSuccessModal(teamName, assignedGroup) {
 }
 
 function redirectToHome() {
-  window.location.href = "index.html"
+  window.location.href = "NVYTorneo.html"
 }
 
 function exportTeamToExcel(teamData) {
