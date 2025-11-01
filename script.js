@@ -85,6 +85,7 @@ async function loadAllData() {
           name: player.name,
           uid: player.uid,
           country: player.country,
+          countryCode: player.country_code,
           phone: player.phone,
           role: player.role,
           stats: {
@@ -110,7 +111,23 @@ async function loadAllData() {
     }))
     maps = mapsData
     mapBans = mapBansData
-    heroStats = heroStatsData || { teams: 16, players: 80, matches: 15 }
+
+    if (heroStatsData && heroStatsData.length > 0) {
+      const stats = heroStatsData[0]
+      heroStats = {
+        teams: stats.total_teams || registeredTeams.length || 16,
+        players: stats.total_players || playersData.length || 80,
+        matches: stats.total_matches || matchesData.length || 15,
+      }
+    } else {
+      // Calcular desde los datos reales
+      heroStats = {
+        teams: registeredTeams.length || 16,
+        players: playersData.length || 80,
+        matches: matchesData.length || 15,
+      }
+    }
+
     tournamentState = tournamentStateData || {
       quarterfinals: [],
       semifinals: [],
@@ -122,9 +139,11 @@ async function loadAllData() {
       teams: teams.length,
       players: players.length,
       matches: matches.length,
+      heroStats: heroStats,
     })
   } catch (error) {
     console.error("[v0] Error al cargar datos:", error)
+    heroStats = { teams: 16, players: 80, matches: 15 }
   }
 }
 
@@ -352,24 +371,44 @@ function animateCounters() {
 }
 
 function updateHeroStats() {
+  console.log("[v0] Actualizando hero stats:", heroStats)
+
   const teamsEl = document.getElementById("heroTeamsCount")
   const playersEl = document.getElementById("heroPlayersCount")
   const matchesEl = document.getElementById("heroMatchesCount")
 
-  if (teamsEl) teamsEl.textContent = heroStats.teams
-  if (playersEl) playersEl.textContent = heroStats.players
-  if (matchesEl) matchesEl.textContent = heroStats.matches
+  if (teamsEl) {
+    teamsEl.textContent = heroStats.teams || 0
+    console.log("[v0] Hero teams count set to:", heroStats.teams)
+  }
+  if (playersEl) {
+    playersEl.textContent = heroStats.players || 0
+    console.log("[v0] Hero players count set to:", heroStats.players)
+  }
+  if (matchesEl) {
+    matchesEl.textContent = heroStats.matches || 0
+    console.log("[v0] Hero matches count set to:", heroStats.matches)
+  }
 }
 
 function renderGroups() {
   const container = document.getElementById("groupsContainer")
-  if (!container) return
+  if (!container) {
+    console.log("[v0] Groups container not found")
+    return
+  }
 
   const groups = ["A", "B", "C", "D"]
   container.innerHTML = ""
 
+  console.log("[v0] Renderizando grupos con", registeredTeams.length, "equipos")
+
   groups.forEach((groupName) => {
-    const groupTeams = registeredTeams.filter((t) => t.group === groupName).sort((a, b) => b.points - a.points)
+    const groupTeams = registeredTeams
+      .filter((t) => t.group === groupName)
+      .sort((a, b) => (b.points || 0) - (a.points || 0))
+
+    console.log(`[v0] Grupo ${groupName}:`, groupTeams.length, "equipos")
 
     const groupDiv = document.createElement("div")
     groupDiv.className = "group fade-in-up"
@@ -380,7 +419,8 @@ function renderGroups() {
           (team) => `
         <div class="team-card" onclick="showTeamModal('${team.id}')">
           <img src="${team.logo || "/generic-team-logo.png"}" 
-               alt="${team.name}" class="team-logo">
+               alt="${team.name}" class="team-logo"
+               onerror="this.src='/generic-team-logo.png'">
           <div class="team-info">
             <div class="team-name">${team.name}</div>
             <div class="team-subtitle">${team.abbreviation} - ${team.players ? team.players.length : 0} jugadores</div>
@@ -394,106 +434,13 @@ function renderGroups() {
 
     container.appendChild(groupDiv)
   })
-}
-
-function renderStats(filter = "kills") {
-  const container = document.getElementById("statsLeaderboard")
-  if (!container) return
-
-  const allPlayers = []
-  registeredTeams.forEach((team) => {
-    if (team.players) {
-      team.players.forEach((player) => {
-        allPlayers.push({
-          ...player,
-          teamName: team.name,
-          teamLogo: team.logo,
-          teamId: team.id,
-        })
-      })
-    }
-  })
-
-  const sortedPlayers = allPlayers
-    .sort((a, b) => {
-      const aStat = (a.stats && a.stats[filter]) || 0
-      const bStat = (b.stats && b.stats[filter]) || 0
-      return bStat - aStat
-    })
-    .slice(0, 3)
-
-  const filterLabels = {
-    kills: "BAJAS",
-    assists: "ASISTENCIAS",
-    revives: "REVIVIDAS",
-    vehicleDamage: "DAÑO A VEHÍCULOS",
-  }
-
-  container.innerHTML = `
-    <div class="stats-category-title">${filterLabels[filter]}</div>
-    <div class="podium-container">
-      ${
-        sortedPlayers[1]
-          ? `
-        <div class="podium-banner second-place">
-          <div class="banner-position">2° LUGAR</div>
-          <div class="banner-content">
-            ${sortedPlayers[1].teamLogo ? `<img src="${sortedPlayers[1].teamLogo}" alt="${sortedPlayers[1].teamName}" class="banner-team-logo">` : ""}
-            <div class="banner-player-name">${sortedPlayers[1].name}</div>
-            <div class="banner-team-name">${sortedPlayers[1].teamName}</div>
-            <div class="banner-stat-value">${(sortedPlayers[1].stats && sortedPlayers[1].stats[filter]) || 0}</div>
-          </div>
-        </div>
-      `
-          : ""
-      }
-      ${
-        sortedPlayers[0]
-          ? `
-        <div class="podium-banner first-place">
-          <div class="banner-position">1° LUGAR</div>
-          <div class="banner-content">
-            ${sortedPlayers[0].teamLogo ? `<img src="${sortedPlayers[0].teamLogo}" alt="${sortedPlayers[0].teamName}" class="banner-team-logo">` : ""}
-            <div class="banner-player-name">${sortedPlayers[0].name}</div>
-            <div class="banner-team-name">${sortedPlayers[0].teamName}</div>
-            <div class="banner-stat-value">${(sortedPlayers[0].stats && sortedPlayers[0].stats[filter]) || 0}</div>
-          </div>
-        </div>
-      `
-          : ""
-      }
-      ${
-        sortedPlayers[2]
-          ? `
-        <div class="podium-banner third-place">
-          <div class="banner-position">3° LUGAR</div>
-          <div class="banner-content">
-            ${sortedPlayers[2].teamLogo ? `<img src="${sortedPlayers[2].teamLogo}" alt="${sortedPlayers[2].teamName}" class="banner-team-logo">` : ""}
-            <div class="banner-player-name">${sortedPlayers[2].name}</div>
-            <div class="banner-team-name">${sortedPlayers[2].teamName}</div>
-            <div class="banner-stat-value">${(sortedPlayers[2].stats && sortedPlayers[2].stats[filter]) || 0}</div>
-          </div>
-        </div>
-      `
-          : ""
-      }
-    </div>
-  `
-
-  document.querySelectorAll(".filter-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"))
-      btn.classList.add("active")
-      renderStats(btn.dataset.filter)
-    })
-  })
 
   if (anime) {
     anime({
-      targets: ".podium-banner",
+      targets: ".group",
       opacity: [0, 1],
-      translateY: [50, 0],
-      delay: anime.stagger(150),
+      translateY: [30, 0],
+      delay: anime.stagger(100),
       duration: 800,
       easing: "easeOutExpo",
     })
@@ -1148,3 +1095,10 @@ function createTeamStatsHTML(teamPlayers) {
 function loadMatches() {
   renderMapBans()
 }
+
+function renderStats() {
+  // Placeholder function for rendering stats
+  console.log("[v0] Rendering stats...")
+}
+
+
