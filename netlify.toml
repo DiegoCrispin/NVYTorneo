@@ -1,7 +1,11 @@
 [build]
-  # No build command needed for static HTML
+  command = ""
   publish = "."
   
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--ignore-scripts"
+
 [[redirects]]
   from = "/*"
   to = "/NVYTorneo.html"
