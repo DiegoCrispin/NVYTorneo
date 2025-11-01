@@ -1,46 +1,136 @@
-// Data Storage
-let registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
+// Script principal para la página pública del torneo (index.html)
+// Migrado de localStorage a Supabase con sincronización en tiempo real
 
-// Data Storage - Keep for backwards compatibility but prioritize registeredTeams
-let teams = JSON.parse(localStorage.getItem("teams")) || []
-let players = JSON.parse(localStorage.getItem("players")) || []
-let matches = JSON.parse(localStorage.getItem("matches")) || []
-let maps = JSON.parse(localStorage.getItem("maps")) || []
-let mapBans = JSON.parse(localStorage.getItem("mapBans")) || []
-let heroStats = JSON.parse(localStorage.getItem("heroStats")) || {
+// Variables globales
+let registeredTeams = []
+let teams = []
+let players = []
+let matches = []
+let maps = []
+let mapBans = []
+let heroStats = {
   teams: 16,
   players: 80,
   matches: 15,
 }
-let tournamentState = JSON.parse(localStorage.getItem("tournamentState")) || {
+let tournamentState = {
   quarterfinals: [],
   semifinals: [],
   final: [],
   champion: null,
 }
 
-// Anime.js library import
 const anime = window.anime
+const db = window.db
 
-// BroadcastChannel for real-time sync between tabs
-const syncChannel = new BroadcastChannel("tournament-sync")
-
-// Initialize
-document.addEventListener("DOMContentLoaded", () => {
-  initNavigation()
-  initScrollAnimations()
-  initAnimatedBackground()
-  updateHeroStats()
-  renderGroups()
-  renderBrackets()
-  renderStats()
-  renderMapBans()
-  loadMatches() // Llamar a loadMatches en DOMContentLoaded
-  initModal()
-  initRealtimeSync()
+// Inicializar
+document.addEventListener("DOMContentLoaded", async () => {
+  await initApp()
 })
 
+async function initApp() {
+  try {
+    console.log("[v0] Inicializando aplicación...")
+    await loadAllData()
+    initNavigation()
+    initScrollAnimations()
+    initAnimatedBackground()
+    updateHeroStats()
+    renderGroups()
+    renderBrackets()
+    renderStats()
+    renderMapBans()
+    loadMatches()
+    initModal()
+    initRealtimeSync()
+    console.log("[v0] Aplicación inicializada correctamente")
+  } catch (error) {
+    console.error("[v0] Error al inicializar:", error)
+  }
+}
+
+async function loadAllData() {
+  try {
+    console.log("[v0] Cargando datos desde Supabase...")
+
+    const [teamsData, playersData, matchesData, mapsData, mapBansData, heroStatsData, tournamentStateData] =
+      await Promise.all([
+        db.getTeams(),
+        db.getPlayers(),
+        db.getMatches(),
+        db.getMaps(),
+        db.getMapBans(),
+        db.getHeroStats(),
+        db.getTournamentState(),
+      ])
+
+    // Mapear equipos con sus jugadores
+    registeredTeams = teamsData.map((team) => ({
+      id: team.id,
+      name: team.name,
+      abbreviation: team.abbreviation,
+      group: team.group,
+      logo: team.logo,
+      points: team.points || 0,
+      createdAt: team.created_at,
+      players: [],
+    }))
+
+    // Asignar jugadores a sus equipos
+    playersData.forEach((player) => {
+      const team = registeredTeams.find((t) => t.id === player.team_id)
+      if (team) {
+        team.players.push({
+          id: player.id,
+          name: player.name,
+          uid: player.uid,
+          country: player.country,
+          phone: player.phone,
+          role: player.role,
+          stats: {
+            kills: player.kills || 0,
+            assists: player.assists || 0,
+            revives: player.revives || 0,
+            vehicleDamage: player.vehicle_damage || 0,
+          },
+        })
+      }
+    })
+
+    teams = registeredTeams
+    players = playersData
+    matches = matchesData.map((m) => ({
+      id: m.id,
+      team1: m.team1_id,
+      team2: m.team2_id,
+      phase: m.phase,
+      gamesData: m.games_data || [],
+      winner: m.winner_id,
+      score: m.score,
+    }))
+    maps = mapsData
+    mapBans = mapBansData
+    heroStats = heroStatsData || { teams: 16, players: 80, matches: 15 }
+    tournamentState = tournamentStateData || {
+      quarterfinals: [],
+      semifinals: [],
+      final: [],
+      champion: null,
+    }
+
+    console.log("[v0] Datos cargados:", {
+      teams: teams.length,
+      players: players.length,
+      matches: matches.length,
+    })
+  } catch (error) {
+    console.error("[v0] Error al cargar datos:", error)
+  }
+}
+
 function initAnimatedBackground() {
+  if (!anime) return
+
   anime({
     targets: ".shape-1",
     translateX: [0, 100, 0],
@@ -93,107 +183,61 @@ function initAnimatedBackground() {
 }
 
 function initRealtimeSync() {
-  syncChannel.onmessage = (event) => {
-    console.log("[v0] Sync message received:", event.data)
-
-    const { type, data } = event.data
-
-    switch (type) {
-      case "teams":
-        teams = data
-        renderGroups()
-        renderBrackets()
-        break
-      case "registeredTeams":
-        registeredTeams = data
-        renderGroups()
-        renderBrackets()
-        renderStats()
-        break
-      case "players":
-        players = data
-        renderStats()
-        break
-      case "matches":
-        matches = data
-        renderBrackets()
-        loadMatches() // Mejorar initRealtimeSync para recargar partidas
-        break
-      case "maps":
-        maps = data
-        renderMapBans()
-        break
-      case "mapBans":
-        mapBans = data
-        renderMapBans()
-        break
-      case "heroStats":
-        heroStats = data
-        updateHeroStats()
-        animateCounters()
-        break
-      case "tournamentState":
-        tournamentState = data
-        renderBrackets()
-        break
-      case "refresh":
-        registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
-        teams = JSON.parse(localStorage.getItem("teams")) || []
-        players = JSON.parse(localStorage.getItem("players")) || []
-        matches = JSON.parse(localStorage.getItem("matches")) || []
-        maps = JSON.parse(localStorage.getItem("maps")) || []
-        mapBans = JSON.parse(localStorage.getItem("mapBans")) || []
-        heroStats = JSON.parse(localStorage.getItem("heroStats")) || { teams: 16, players: 80, matches: 15 }
-        tournamentState = JSON.parse(localStorage.getItem("tournamentState")) || {
-          quarterfinals: [],
-          semifinals: [],
-          final: [],
-          champion: null,
-        }
-        updateHeroStats()
-        animateCounters()
-        renderGroups()
-        renderBrackets()
-        renderStats()
-        renderMapBans()
-        break
-    }
-  }
-
-  window.addEventListener("storage", (e) => {
-    console.log("[v0] Storage change detected:", e.key)
-
-    if (e.key === "registeredTeams") {
-      registeredTeams = JSON.parse(e.newValue) || []
-      renderGroups()
-      renderBrackets()
-      renderStats()
-    } else if (e.key === "teams") {
-      teams = JSON.parse(e.newValue) || []
-      renderGroups()
-      renderBrackets()
-    } else if (e.key === "players") {
-      players = JSON.parse(e.newValue) || []
-      renderStats()
-    } else if (e.key === "matches") {
-      matches = JSON.parse(e.newValue) || []
-      renderBrackets()
-      loadMatches() // Mejorar initRealtimeSync para recargar partidas
-    } else if (e.key === "maps") {
-      maps = JSON.parse(e.newValue) || []
-      renderMapBans()
-    } else if (e.key === "mapBans") {
-      mapBans = JSON.parse(e.newValue) || []
-      renderMapBans()
-    } else if (e.key === "heroStats") {
-      heroStats = JSON.parse(e.newValue) || { teams: 16, players: 80, matches: 15 }
+  // Suscribirse a cambios en teams
+  window.supabaseClient
+    .channel("teams-public")
+    .on("postgres_changes", { event: "*", schema: "public", table: "teams" }, async () => {
+      console.log("[v0] Teams changed, reloading...")
+      await loadAllData()
       updateHeroStats()
-      animateCounters()
-    }
-  })
+      renderGroups()
+      renderBrackets()
+      renderStats()
+    })
+    .subscribe()
+
+  // Suscribirse a cambios en players
+  window.supabaseClient
+    .channel("players-public")
+    .on("postgres_changes", { event: "*", schema: "public", table: "players" }, async () => {
+      console.log("[v0] Players changed, reloading...")
+      await loadAllData()
+      renderStats()
+    })
+    .subscribe()
+
+  // Suscribirse a cambios en matches
+  window.supabaseClient
+    .channel("matches-public")
+    .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, async () => {
+      console.log("[v0] Matches changed, reloading...")
+      await loadAllData()
+      renderBrackets()
+      loadMatches()
+    })
+    .subscribe()
+
+  // Suscribirse a cambios en maps
+  window.supabaseClient
+    .channel("maps-public")
+    .on("postgres_changes", { event: "*", schema: "public", table: "maps" }, async () => {
+      console.log("[v0] Maps changed, reloading...")
+      await loadAllData()
+      renderMapBans()
+    })
+    .subscribe()
+
+  // Suscribirse a cambios en tournament_state
+  window.supabaseClient
+    .channel("tournament-state-public")
+    .on("postgres_changes", { event: "*", schema: "public", table: "tournament_state" }, async () => {
+      console.log("[v0] Tournament state changed, reloading...")
+      await loadAllData()
+      renderBrackets()
+    })
+    .subscribe()
 }
 
-// Navigation
 function initNavigation() {
   const hamburger = document.querySelector(".hamburger")
   const navMenu = document.querySelector(".nav-menu")
@@ -218,19 +262,21 @@ function initNavigation() {
     })
   })
 
-  // Navbar scroll effect
   window.addEventListener("scroll", () => {
     const navbar = document.getElementById("navbar")
-    if (window.scrollY > 50) {
-      navbar.style.background = "rgba(15, 10, 30, 0.98)"
-    } else {
-      navbar.style.background = "rgba(15, 10, 30, 0.95)"
+    if (navbar) {
+      if (window.scrollY > 50) {
+        navbar.style.background = "rgba(15, 10, 30, 0.98)"
+      } else {
+        navbar.style.background = "rgba(15, 10, 30, 0.95)"
+      }
     }
   })
 }
 
-// Scroll Animations with Anime.js
 function initScrollAnimations() {
+  if (!anime) return
+
   const observerOptions = {
     threshold: 0.1,
     rootMargin: "0px 0px -100px 0px",
@@ -249,7 +295,6 @@ function initScrollAnimations() {
     observer.observe(section)
   })
 
-  // Animate section titles
   document.querySelectorAll(".section-title").forEach((title) => {
     anime({
       targets: title,
@@ -261,10 +306,8 @@ function initScrollAnimations() {
     })
   })
 
-  // Hero stats counter animation
   animateCounters()
 
-  // Parallax effect on hero background
   window.addEventListener("scroll", () => {
     const scrolled = window.pageYOffset
     const heroBg = document.querySelector(".hero-bg")
@@ -275,6 +318,8 @@ function initScrollAnimations() {
 }
 
 function animateElement(element) {
+  if (!anime) return
+
   anime({
     targets: element,
     opacity: [0, 1],
@@ -285,6 +330,8 @@ function animateElement(element) {
 }
 
 function animateCounters() {
+  if (!anime) return
+
   const counters = [
     { element: document.getElementById("heroTeamsCount"), target: heroStats.teams },
     { element: document.getElementById("heroPlayersCount"), target: heroStats.players },
@@ -304,7 +351,6 @@ function animateCounters() {
   })
 }
 
-// Update Hero Stats
 function updateHeroStats() {
   const teamsEl = document.getElementById("heroTeamsCount")
   const playersEl = document.getElementById("heroPlayersCount")
@@ -315,11 +361,11 @@ function updateHeroStats() {
   if (matchesEl) matchesEl.textContent = heroStats.matches
 }
 
-// Render Groups
 function renderGroups() {
   const container = document.getElementById("groupsContainer")
-  const groups = ["A", "B", "C", "D"]
+  if (!container) return
 
+  const groups = ["A", "B", "C", "D"]
   container.innerHTML = ""
 
   groups.forEach((groupName) => {
@@ -328,33 +374,32 @@ function renderGroups() {
     const groupDiv = document.createElement("div")
     groupDiv.className = "group fade-in-up"
     groupDiv.innerHTML = `
-            <h3 class="group-header">Grupo ${groupName}</h3>
-            ${groupTeams
-              .map(
-                (team) => `
-                <div class="team-card" onclick="showTeamModal('${team.id}')">
-                    <img src="${team.logo || "/generic-team-logo.png"}" 
-                         alt="${team.name}" class="team-logo">
-                    <div class="team-info">
-                        <div class="team-name">${team.name}</div>
-                        <div class="team-subtitle">${team.abbreviation} - ${team.players ? team.players.length : 0} jugadores</div>
-                    </div>
-                </div>
-            `,
-              )
-              .join("")}
-            ${groupTeams.length === 0 ? '<p class="empty-group">Sin equipos registrados</p>' : ""}
-        `
+      <h3 class="group-header">Grupo ${groupName}</h3>
+      ${groupTeams
+        .map(
+          (team) => `
+        <div class="team-card" onclick="showTeamModal('${team.id}')">
+          <img src="${team.logo || "/generic-team-logo.png"}" 
+               alt="${team.name}" class="team-logo">
+          <div class="team-info">
+            <div class="team-name">${team.name}</div>
+            <div class="team-subtitle">${team.abbreviation} - ${team.players ? team.players.length : 0} jugadores</div>
+          </div>
+        </div>
+      `,
+        )
+        .join("")}
+      ${groupTeams.length === 0 ? '<p class="empty-group">Sin equipos registrados</p>' : ""}
+    `
 
     container.appendChild(groupDiv)
   })
 }
 
-// Render Statistics with TOP 3 banner design
 function renderStats(filter = "kills") {
   const container = document.getElementById("statsLeaderboard")
+  if (!container) return
 
-  // Extract all players from registeredTeams with their stats
   const allPlayers = []
   registeredTeams.forEach((team) => {
     if (team.players) {
@@ -435,7 +480,6 @@ function renderStats(filter = "kills") {
     </div>
   `
 
-  // Filter buttons
   document.querySelectorAll(".filter-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"))
@@ -444,27 +488,25 @@ function renderStats(filter = "kills") {
     })
   })
 
-  // Animate banners
-  anime({
-    targets: ".podium-banner",
-    opacity: [0, 1],
-    translateY: [50, 0],
-    delay: anime.stagger(150),
-    duration: 800,
-    easing: "easeOutExpo",
-  })
+  if (anime) {
+    anime({
+      targets: ".podium-banner",
+      opacity: [0, 1],
+      translateY: [50, 0],
+      delay: anime.stagger(150),
+      duration: 800,
+      easing: "easeOutExpo",
+    })
+  }
 }
 
-// Render Brackets with purple playoff bracket design
 function renderBrackets() {
   const container = document.getElementById("bracketsContainer")
-
   if (!container) {
     console.log("[v0] Brackets container not found")
     return
   }
 
-  // Check if groups are completed
   const allTeams = registeredTeams.length
   const groupsCompleted = allTeams >= 4 && registeredTeams.every((t) => t.group)
 
@@ -483,7 +525,6 @@ function renderBrackets() {
   const groupC = registeredTeams.filter((t) => t.group === "C").sort((a, b) => b.points - a.points)
   const groupD = registeredTeams.filter((t) => t.group === "D").sort((a, b) => b.points - a.points)
 
-  // Check if all groups have at least 2 teams
   const groupsReady = [groupA, groupB, groupC, groupD].every((g) => g.length >= 2)
 
   if (!groupsReady) {
@@ -496,8 +537,6 @@ function renderBrackets() {
     return
   }
 
-  // Left Quarterfinals: 1A vs 2C, 1B vs 2D
-  // Right Quarterfinals: 1C vs 2A, 1D vs 2B
   const quarterfinalsLeft = [
     { team1: groupA[0], team2: groupC[1] },
     { team1: groupB[0], team2: groupD[1] },
@@ -517,7 +556,6 @@ function renderBrackets() {
   container.innerHTML = `
     <div class="bracket-wrapper">
       <div class="playoffs-grid">
-        <!-- Quarterfinals Left Side -->
         <div class="playoff-stage">
           <div class="bracket-stage-title">Cuartos de Final (Izq)</div>
           <div class="bracket-matches-column">
@@ -526,7 +564,6 @@ function renderBrackets() {
           </div>
         </div>
 
-        <!-- Semifinals Left Side -->
         <div class="playoff-stage">
           <div class="bracket-stage-title">Semifinales (Izq)</div>
           <div class="bracket-matches-column">
@@ -535,7 +572,6 @@ function renderBrackets() {
           </div>
         </div>
 
-        <!-- Final -->
         <div class="playoff-stage">
           <div class="bracket-stage-title">Final</div>
           <div class="champion-section">
@@ -545,7 +581,6 @@ function renderBrackets() {
           </div>
         </div>
 
-        <!-- Semifinals Right Side -->
         <div class="playoff-stage">
           <div class="bracket-stage-title">Semifinales (Der)</div>
           <div class="bracket-matches-column">
@@ -554,7 +589,6 @@ function renderBrackets() {
           </div>
         </div>
 
-        <!-- Quarterfinals Right Side -->
         <div class="playoff-stage">
           <div class="bracket-stage-title">Cuartos de Final (Der)</div>
           <div class="bracket-matches-column">
@@ -564,7 +598,6 @@ function renderBrackets() {
         </div>
       </div>
 
-      <!-- Champion Badge -->
       ${
         champion
           ? `
@@ -580,23 +613,25 @@ function renderBrackets() {
     </div>
   `
 
-  anime({
-    targets: ".bracket-match-card",
-    opacity: [0, 1],
-    translateY: [30, 0],
-    delay: anime.stagger(100),
-    duration: 700,
-    easing: "easeOutExpo",
-  })
+  if (anime) {
+    anime({
+      targets: ".bracket-match-card",
+      opacity: [0, 1],
+      translateY: [30, 0],
+      delay: anime.stagger(100),
+      duration: 700,
+      easing: "easeOutExpo",
+    })
 
-  anime({
-    targets: ".playoff-stage",
-    opacity: [0, 1],
-    translateX: anime.stagger([-50, 50], { direction: "alternate" }),
-    duration: 800,
-    delay: anime.stagger(150),
-    easing: "easeOutExpo",
-  })
+    anime({
+      targets: ".playoff-stage",
+      opacity: [0, 1],
+      translateX: anime.stagger([-50, 50], { direction: "alternate" }),
+      duration: 800,
+      delay: anime.stagger(150),
+      easing: "easeOutExpo",
+    })
+  }
 }
 
 function renderPlayoffMatchup(matchup) {
@@ -649,11 +684,10 @@ function renderPlayoffTeamBox(team, isFinal = false) {
   `
 }
 
-// Render Map Bans
 function renderMapBans() {
   const container = document.getElementById("mapBansContainer")
+  if (!container) return
 
-  // Group matches by group
   const groupMatches = matches.filter((m) => m.phase === "groups")
   const groups = ["A", "B", "C", "D"]
 
@@ -688,25 +722,25 @@ function renderMapBans() {
                   .map((game) => {
                     const map = maps.find((m) => m.id === game.mapId)
                     const gameWinner = registeredTeams.find((t) => t.id === game.winner)
-                    return `\
-                    <div class="played-map-item">\
-                      <img src="${map?.image || "/game-map.jpg"}" alt="${map?.name || "Desconocido"}">\
+                    return `
+                    <div class="played-map-item">
+                      <img src="${map?.image || "/game-map.jpg"}" alt="${map?.name || "Desconocido"}">
                       <div class="played-map-info">
-                        <span class="played-map-name">${map?.name || "Desconocido"}</span>\
+                        <span class="played-map-name">${map?.name || "Desconocido"}</span>
                         <span class="played-map-winner">Ganador: ${gameWinner?.name || "Desconocido"}</span>
-                      </div>\
-                    </div>\
+                      </div>
+                    </div>
                   `
                   })
                   .join("")
 
-                return `\
-                <div class="match-info-card" onclick="showMatchDetails(\'${match.id}\')">\
-                  <div class="match-header">\
-                    <h4>Partida ${index + 1}</h4>\
+                return `
+                <div class="match-info-card" onclick="showMatchDetails('${match.id}')">
+                  <div class="match-header">
+                    <h4>Partida ${index + 1}</h4>
                     ${winner ? `<span class="match-status completed">Completada</span>` : `<span class="match-status pending">Pendiente</span>`}
                   </div>
-                  <div class="match-teams">\
+                  <div class="match-teams">
                     <div class="match-team ${winner && winner.id === team1?.id ? "winner" : ""}">
                       <img src="${team1?.logo || "/generic-team-logo.png"}" alt="${team1?.name || "TBD"}">
                       <span>${team1?.name || "TBD"}</span>
@@ -719,7 +753,7 @@ function renderMapBans() {
                   </div>
                   ${
                     gamesData.length > 0
-                      ? `\
+                      ? `
                     <div class="match-maps-played">
                       <h5>Mapas Jugados:</h5>
                       <div class="maps-played-list">
@@ -731,7 +765,7 @@ function renderMapBans() {
                   }
                   ${
                     winner
-                      ? `\
+                      ? `
                     <div class="match-result">
                       <span class="result-label">Ganador de la Serie:</span>
                       <span class="result-winner">${winner.name}</span>
@@ -753,18 +787,18 @@ function renderMapBans() {
   container.innerHTML =
     html || '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay partidas registradas</p>'
 
-  // Animate cards
-  anime({
-    targets: ".match-info-card",
-    opacity: [0, 1],
-    translateY: [20, 0],
-    delay: anime.stagger(80),
-    duration: 600,
-    easing: "easeOutExpo",
-  })
+  if (anime) {
+    anime({
+      targets: ".match-info-card",
+      opacity: [0, 1],
+      translateY: [20, 0],
+      delay: anime.stagger(80),
+      duration: 600,
+      easing: "easeOutExpo",
+    })
+  }
 }
 
-// Team Modal
 function initModal() {
   const modal = document.getElementById("teamModal")
   const closeBtn = document.querySelector(".close")
@@ -799,7 +833,6 @@ window.showTeamModal = (teamId) => {
   const members = teamPlayers.filter((p) => p.role === "member")
   const substitutes = teamPlayers.filter((p) => p.role === "substitute")
 
-  // Get team matches from registeredTeams
   const teamMatches = matches.filter((m) => m.team1 === teamId || m.team2 === teamId)
   const wins = teamMatches.filter((m) => m.winner === teamId).length
   const losses = teamMatches.filter((m) => m.winner && m.winner !== teamId).length
@@ -843,7 +876,7 @@ window.showTeamModal = (teamId) => {
     <div class="modal-tab-content active" data-content="players">
       ${
         leader
-          ? `\
+          ? `
         <div class="players-section">
           <h3>Líder</h3>
           ${createPlayerHTML(leader)}
@@ -853,7 +886,7 @@ window.showTeamModal = (teamId) => {
       }
       ${
         members.length > 0
-          ? `\
+          ? `
         <div class="players-section">
           <h3>Miembros</h3>
           ${members.map((p) => createPlayerHTML(p)).join("")}
@@ -863,7 +896,7 @@ window.showTeamModal = (teamId) => {
       }
       ${
         substitutes.length > 0
-          ? `\
+          ? `
         <div class="players-section">
           <h3>Suplentes</h3>
           ${substitutes.map((p) => createPlayerHTML(p)).join("")}
@@ -925,13 +958,15 @@ window.showTeamModal = (teamId) => {
     }),
   )
 
-  anime({
-    targets: ".modal-content",
-    scale: [0.8, 1],
-    opacity: [0, 1],
-    duration: 400,
-    easing: "easeOutExpo",
-  })
+  if (anime) {
+    anime({
+      targets: ".modal-content",
+      scale: [0.8, 1],
+      opacity: [0, 1],
+      duration: 400,
+      easing: "easeOutExpo",
+    })
+  }
 }
 
 window.showMatchDetails = (matchId) => {
@@ -950,7 +985,7 @@ window.showMatchDetails = (matchId) => {
   const modal = document.getElementById("teamModal")
   const content = document.getElementById("teamModalContent")
 
-  content.innerHTML = `\
+  content.innerHTML = `
     <div class="modal-match-header">
       <h2>Detalles de la Partida (Mejor de 5)</h2>
       <div class="modal-match-teams">
@@ -966,7 +1001,7 @@ window.showMatchDetails = (matchId) => {
       </div>
       ${
         winner
-          ? `\
+          ? `
         <div class="modal-match-winner">
           <h3>Ganador de la Serie</h3>
           <div class="modal-winner-team">
@@ -975,7 +1010,7 @@ window.showMatchDetails = (matchId) => {
           </div>
         </div>
       `
-          : `\
+          : `
         <div class="modal-match-status">
           <h3>Serie en Progreso</h3>
           <p>Marcador actual: ${team1Wins} - ${team2Wins}</p>
@@ -991,7 +1026,7 @@ window.showMatchDetails = (matchId) => {
           const map = maps.find((m) => m.id === game.mapId)
           const gameWinner = registeredTeams.find((t) => t.id === game.winner)
 
-          return `\
+          return `
             <div class="modal-game-card">
               <div class="modal-game-number">Mapa ${index + 1}</div>
               <div class="modal-game-map">
@@ -1031,13 +1066,15 @@ window.showMatchDetails = (matchId) => {
 
   modal.style.display = "block"
 
-  anime({
-    targets: ".modal-content",
-    scale: [0.8, 1],
-    opacity: [0, 1],
-    duration: 400,
-    easing: "easeOutExpo",
-  })
+  if (anime) {
+    anime({
+      targets: ".modal-content",
+      scale: [0.8, 1],
+      opacity: [0, 1],
+      duration: 400,
+      easing: "easeOutExpo",
+    })
+  }
 }
 
 function createPlayerHTML(player) {
@@ -1109,114 +1146,5 @@ function createTeamStatsHTML(teamPlayers) {
 }
 
 function loadMatches() {
-  const container = document.getElementById("mapBansContainer")
-  if (!container) return
-
-  const groupMatches = matches.filter((m) => m.phase === "groups")
-  const groups = ["A", "B", "C", "D"]
-
-  if (groupMatches.length === 0) {
-    container.innerHTML =
-      '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay partidas registradas aún</p>'
-    return
-  }
-
-  let html = ""
-
-  groups.forEach((groupName) => {
-    const groupTeams = registeredTeams.filter((t) => t.group === groupName)
-    const groupTeamIds = groupTeams.map((t) => t.id)
-    const groupMatchesFiltered = groupMatches.filter(
-      (m) => groupTeamIds.includes(m.team1) && groupTeamIds.includes(m.team2),
-    )
-
-    if (groupMatchesFiltered.length > 0) {
-      html += `
-        <div class="group-matches-section">
-          <h3 class="group-matches-title">Grupo ${groupName}</h3>
-          <div class="matches-grid">
-            ${groupMatchesFiltered
-              .map((match, index) => {
-                const team1 = registeredTeams.find((t) => t.id === match.team1)
-                const team2 = registeredTeams.find((t) => t.id === match.team2)
-                const winner = match.winner ? registeredTeams.find((t) => t.id === match.winner) : null
-
-                const gamesData = match.gamesData || []
-                const mapsPlayedHTML = gamesData
-                  .map((game) => {
-                    const map = maps.find((m) => m.id === game.mapId)
-                    const gameWinner = registeredTeams.find((t) => t.id === game.winner)
-                    return `
-                    <div class="played-map-item">
-                      <img src="${map?.image || "/game-map.jpg"}" alt="${map?.name || "Desconocido"}">
-                      <div class="played-map-info">
-                        <span class="played-map-name">${map?.name || "Desconocido"}</span>
-                        <span class="played-map-winner">Ganador: ${gameWinner?.name || "Desconocido"}</span>
-                      </div>
-                    </div>
-                  `
-                  })
-                  .join("")
-
-                return `
-                <div class="match-info-card" onclick="showMatchDetails('${match.id}')">
-                  <div class="match-header">
-                    <h4>Partida ${index + 1}</h4>
-                    ${winner ? `<span class="match-status completed">Completada</span>` : `<span class="match-status pending">Pendiente</span>`}
-                  </div>
-                  <div class="match-teams">
-                    <div class="match-team ${winner && winner.id === team1?.id ? "winner" : ""}">
-                      <img src="${team1?.logo || "/generic-team-logo.png"}" alt="${team1?.name || "TBD"}">
-                      <span>${team1?.name || "TBD"}</span>
-                    </div>
-                    <span class="match-vs">VS</span>
-                    <div class="match-team ${winner && winner.id === team2?.id ? "winner" : ""}">
-                      <img src="${team2?.logo || "/generic-team-logo.png"}" alt="${team2?.name || "TBD"}">
-                      <span>${team2?.name || "TBD"}</span>
-                    </div>
-                  </div>
-                  ${
-                    gamesData.length > 0
-                      ? `\
-                    <div class="match-maps-played">
-                      <h5>Mapas Jugados:</h5>
-                      <div class="maps-played-list">
-                        ${mapsPlayedHTML}
-                      </div>
-                    </div>
-                  `
-                      : ""
-                  }
-                  ${
-                    winner
-                      ? `\
-                    <div class="match-result">
-                      <span class="result-label">Ganador de la Serie:</span>
-                      <span class="result-winner">${winner.name}</span>
-                    </div>
-                  `
-                      : ""
-                  }
-                  <div class="match-click-hint">Click para ver detalles</div>
-                </div>
-              `
-              })
-              .join("")}
-          </div>
-        </div>
-      `
-    }
-  })
-
-  container.innerHTML =
-    html || '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">No hay partidas registradas</p>'
-
-  anime({
-    targets: ".match-info-card",
-    opacity: [0, 1],
-    translateY: [20, 0],
-    delay: anime.stagger(80),
-    duration: 600,
-    easing: "easeOutExpo",
-  })
+  renderMapBans()
 }
