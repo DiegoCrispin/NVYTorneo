@@ -15,7 +15,7 @@
                 <span class="brand-name">NoVanity Admin</span>
             </div>
             <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link">Volver al Torneo</a></li>
+                <li><a href="NVYTorneo.html" class="nav-link">Volver al Torneo</a></li>
                 <li><a href="#" id="logoutBtn" class="nav-link" style="color: #ef4444;">Cerrar Sesión</a></li>
             </ul>
         </div>
@@ -349,17 +349,7 @@
         </main>
     </div>
 
-    <!-- Agregar scripts de Supabase y configuración -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        window.SUPABASE_CONFIG = {
-            url: 'https://kpgouawqwtoxxvzwkzhv.supabase.co',
-            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwZ291YXdxd3RveHh2endremh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMDkwNDIsImV4cCI6MjA3NzU4NTA0Mn0.b25CsiFl4wEs-i7aCXAH4F0E3AKDKUBo1UQs047Mjt8'
-        }
-    </script>
-    <script src="js/supabase-client.js"></script>
-    
     <script>
         // Check authentication before loading admin panel
         if (sessionStorage.getItem('nvyAdminAuth') !== 'true') {
@@ -378,7 +368,7 @@
             }
         });
     </script>
-    <script src="js/admin.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>
 
