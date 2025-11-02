@@ -214,34 +214,58 @@ function initAdminNavigation() {
   const navLinks = document.querySelectorAll(".admin-nav-link")
   console.log("[v0] Inicializando navegación, enlaces encontrados:", navLinks.length)
 
+  // Inicializar mostrando la primera sección
+  if (navLinks.length > 0) {
+    navLinks[0].classList.add("active")
+    const firstSectionId = navLinks[0].dataset.section
+    const firstSection = document.getElementById(firstSectionId)
+    if (firstSection) {
+      firstSection.classList.add("active")
+    }
+  }
+
   navLinks.forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault()
-      console.log("[v0] Click en navegación:", link.dataset.section)
-
-      // Remover active de todos los links
-      navLinks.forEach((l) => l.classList.remove("active"))
-      link.classList.add("active")
-
-      // Obtener la sección a mostrar
       const sectionId = link.dataset.section
+      console.log("[v0] Click en navegación:", sectionId)
 
-      // Ocultar todas las secciones
+      document.querySelectorAll(".admin-nav-link").forEach((l) => {
+        l.classList.remove("active")
+      })
       document.querySelectorAll(".admin-section").forEach((section) => {
         section.classList.remove("active")
       })
 
-      // Mostrar la sección seleccionada
+      link.classList.add("active")
       const target = document.getElementById(sectionId)
       if (target) {
         target.classList.add("active")
-        console.log("[v0] Mostrando sección:", sectionId)
+        console.log("[v0] Sección activada:", sectionId)
       } else {
         console.error("[v0] Sección no encontrada:", sectionId)
       }
 
-      // Cargar datos de la sección
-      loadAdminSection(sectionId)
+      if (sectionId === "hero-stats") {
+        loadHeroStats()
+      } else if (sectionId === "teams") {
+        loadTeams()
+      } else if (sectionId === "registered-teams") {
+        renderRegisteredTeams()
+      } else if (sectionId === "players") {
+        loadPlayers()
+      } else if (sectionId === "player-stats") {
+        loadPlayerStats()
+      } else if (sectionId === "matches") {
+        loadMatches()
+        updateMatchTeamSelects()
+      } else if (sectionId === "maps") {
+        loadMaps()
+        updateBanTeamSelect()
+      } else if (sectionId === "edit-teams") {
+        updateEditTeamSelect()
+        loadTeamForEditing(document.getElementById("editTeamSelect").value)
+      }
     })
   })
 }
@@ -389,6 +413,7 @@ function renderRegisteredTeams() {
           ${(team.players || [])
             .map(
               (player) => `
+
             <div class="player-list-item ${player.role || ""}">
               <div class="player-role-indicator" title="${player.role || ""}">
                 ${player.role === "leader" ? "★" : player.role === "substitute" ? "S" : ""}
@@ -1257,6 +1282,7 @@ function loadTeamForEditing(teamId) {
         ${(team.players || [])
           .map(
             (p, idx) => `
+
           <div class="player-list-compact-item">
             <div class="player-compact-info">
               <strong>${p.name}</strong>
