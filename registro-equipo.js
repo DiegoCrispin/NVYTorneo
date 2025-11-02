@@ -219,6 +219,7 @@ async function handleFormSubmit(e) {
       country: countrySelect ? countrySelect.value : "",
       phone: phoneInput ? phoneInput.value.trim() : "",
       role: roleInput ? roleInput.value : "member",
+      stats: { kills: 0, assists: 0, revives: 0, vehicleDamage: 0 },
     }
   })
 
@@ -277,12 +278,8 @@ async function handleFormSubmit(e) {
   }
 
   try {
-    const response = await window.supabase.saveRegisteredTeam(team)
-    if (!response) {
-      alert("ERROR: No se pudo guardar el equipo. Intenta de nuevo.")
-      return
-    }
-
+    console.log("[v0] Guardando equipo en Supabase:", team)
+    await window.SupabaseClient.saveRegisteredTeam(team)
     console.log("[v0] Equipo guardado en Supabase:", team.id)
     showSuccessModal(teamName, assignedGroup)
   } catch (error) {
@@ -292,27 +289,37 @@ async function handleFormSubmit(e) {
 }
 
 async function assignGroupAutomatically() {
-  const registeredTeams = await window.supabase.fetchRegisteredTeams()
-  const groups = { A: 0, B: 0, C: 0, D: 0 }
+  try {
+    const registeredTeams = await window.SupabaseClient.getRegisteredTeams()
+    console.log("[v0] Equipos registrados actuales:", registeredTeams.length)
 
-  registeredTeams.forEach((team) => {
-    if (groups.hasOwnProperty(team.group)) {
-      groups[team.group]++
+    const groups = { A: 0, B: 0, C: 0, D: 0 }
+
+    registeredTeams.forEach((team) => {
+      if (groups.hasOwnProperty(team.group)) {
+        groups[team.group]++
+      }
+    })
+
+    console.log("[v0] Conteo de grupos:", groups)
+
+    const availableGroups = Object.entries(groups)
+      .filter(([group, count]) => count < 4)
+      .map(([group]) => group)
+
+    if (availableGroups.length === 0) {
+      return null
     }
-  })
 
-  const availableGroups = Object.entries(groups)
-    .filter(([group, count]) => count < 4)
-    .map(([group]) => group)
+    const groupCounts = Object.entries(groups).filter(([g]) => availableGroups.includes(g))
+    const [assignedGroup] = groupCounts.reduce((prev, curr) => (prev[1] < curr[1] ? prev : curr))
 
-  if (availableGroups.length === 0) {
-    return null
+    console.log("[v0] Grupo asignado:", assignedGroup)
+    return assignedGroup
+  } catch (error) {
+    console.error("[v0] Error en assignGroupAutomatically:", error)
+    return "A"
   }
-
-  const groupCounts = Object.entries(groups).filter(([g]) => availableGroups.includes(g))
-  const [assignedGroup] = groupCounts.reduce((prev, curr) => (prev[1] < curr[1] ? prev : curr))
-
-  return assignedGroup
 }
 
 function showSuccessModal(teamName, assignedGroup) {
@@ -339,136 +346,4 @@ function showSuccessModal(teamName, assignedGroup) {
 
 function redirectToHome() {
   window.location.href = "NVYTorneo.html"
-}
-
-function exportTeamToExcel(teamData) {
-  if (!XLSX || !XLSX.utils) {
-    alert("La librería XLSX no está cargada.")
-    return
-  }
-
-  const workbook = XLSX.utils.book_new()
-
-  const teamInfoData = [
-    ["INFORMACIÓN DEL EQUIPO"],
-    [],
-    ["Nombre", teamData.name || ""],
-    ["Abreviación", teamData.abbreviation || ""],
-    ["Grupo", teamData.group || ""],
-    ["Fecha de Registro", teamData.created_at ? new Date(teamData.created_at).toLocaleDateString("es-ES") : ""],
-    ["Total de Jugadores", teamData.players ? teamData.players.length : 0],
-  ]
-
-  const teamSheet = XLSX.utils.aoa_to_sheet(teamInfoData)
-  teamSheet["!cols"] = [{ wch: 25 }, { wch: 30 }]
-  XLSX.utils.book_append_sheet(workbook, teamSheet, "Información")
-
-  const playersData = [
-    ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño Vehículos"],
-  ]
-  ;(teamData.players || []).forEach((player) => {
-    playersData.push([
-      player.name || "",
-      player.uid || "",
-      player.country || "",
-      player.phone || "",
-      player.role || "",
-      (player.stats && player.stats.kills) || 0,
-      (player.stats && player.stats.assists) || 0,
-      (player.stats && player.stats.revives) || 0,
-      (player.stats && player.stats.vehicleDamage) || 0,
-    ])
-  })
-
-  const playersSheet = XLSX.utils.aoa_to_sheet(playersData)
-  playersSheet["!cols"] = [
-    { wch: 20 },
-    { wch: 25 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 12 },
-    { wch: 10 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 15 },
-  ]
-  XLSX.utils.book_append_sheet(workbook, playersSheet, "Jugadores")
-
-  XLSX.writeFile(workbook, `${teamData.name || "Equipo"}_Roster.xlsx`)
-}
-
-function exportAllTeamsToExcel(registeredTeams) {
-  if (!registeredTeams || registeredTeams.length === 0) {
-    alert("No hay equipos para exportar")
-    return
-  }
-
-  if (!XLSX || !XLSX.utils) {
-    alert("La librería XLSX no está cargada")
-    return
-  }
-
-  const workbook = XLSX.utils.book_new()
-
-  const summaryData = [
-    ["RESUMEN DE EQUIPOS REGISTRADOS"],
-    [],
-    ["Total de Equipos", registeredTeams.length],
-    ["Total de Jugadores", registeredTeams.reduce((sum, t) => sum + (t.players ? t.players.length : 0), 0)],
-    [],
-    ["Nombre", "Abreviación", "Grupo", "Jugadores", "Fecha Registro"],
-  ]
-
-  registeredTeams.forEach((team) => {
-    summaryData.push([
-      team.name || "",
-      team.abbreviation || "",
-      team.group || "",
-      team.players ? team.players.length : 0,
-      team.created_at ? new Date(team.created_at).toLocaleDateString("es-ES") : "",
-    ])
-  })
-
-  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData)
-  summarySheet["!cols"] = [{ wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 15 }]
-  XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumen")
-
-  registeredTeams.forEach((team) => {
-    const teamData = [
-      [`EQUIPO: ${team.name || ""}`],
-      [`Abreviación: ${team.abbreviation || ""}`],
-      [`Grupo: ${team.group || ""}`],
-      [],
-      ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño a Vehículos"],
-    ]
-    ;(team.players || []).forEach((player) => {
-      teamData.push([
-        player.name || "",
-        player.uid || "",
-        player.country || "",
-        player.phone || "",
-        player.role || "",
-        (player.stats && player.stats.kills) || 0,
-        (player.stats && player.stats.assists) || 0,
-        (player.stats && player.stats.revives) || 0,
-        (player.stats && player.stats.vehicleDamage) || 0,
-      ])
-    })
-
-    const sheet = XLSX.utils.aoa_to_sheet(teamData)
-    sheet["!cols"] = [
-      { wch: 20 },
-      { wch: 25 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 15 },
-    ]
-    XLSX.utils.book_append_sheet(workbook, sheet, team.abbreviation || team.name || `Equipo_${team.id}`)
-  })
-
-  XLSX.writeFile(workbook, `Todos_los_Equipos_${new Date().toISOString().split("T")[0]}.xlsx`)
 }
