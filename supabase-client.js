@@ -8,7 +8,7 @@ window.SupabaseClient = {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/registered_teams`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
           Prefer: "return=representation",
         },
@@ -29,7 +29,7 @@ window.SupabaseClient = {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/registered_teams?order=created_at.desc`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
         },
       })
@@ -47,15 +47,16 @@ window.SupabaseClient = {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/registered_teams?id=eq.${teamId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
         },
       })
       if (!response.ok) throw new Error(await response.text())
       console.log("[v0] Team deleted:", teamId)
+      return true
     } catch (error) {
       console.error("[v0] Error deleting team:", error)
-      throw error
+      return false
     }
   },
 
@@ -64,7 +65,7 @@ window.SupabaseClient = {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/registered_teams?id=eq.${teamId}`, {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
           Prefer: "return=representation",
         },
@@ -72,6 +73,7 @@ window.SupabaseClient = {
       })
       if (!response.ok) throw new Error(await response.text())
       const data = await response.json()
+      console.log("[v0] Team updated:", teamId)
       return data
     } catch (error) {
       console.error("[v0] Error updating team:", error)
@@ -84,7 +86,7 @@ window.SupabaseClient = {
       const getResponse = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats?id=eq.1`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
         },
       })
@@ -94,7 +96,7 @@ window.SupabaseClient = {
         const response = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats?id=eq.1`, {
           method: "PATCH",
           headers: {
-            Authorization: `Bearer ${SUPABASE_KEY}`,
+            apikey: SUPABASE_KEY,
             "Content-Type": "application/json",
             Prefer: "return=representation",
           },
@@ -106,7 +108,7 @@ window.SupabaseClient = {
         const response = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${SUPABASE_KEY}`,
+            apikey: SUPABASE_KEY,
             "Content-Type": "application/json",
             Prefer: "return=representation",
           },
@@ -123,19 +125,39 @@ window.SupabaseClient = {
 
   async getHeroStats() {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats?id=eq.1`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
         },
       })
-      if (!response.ok) return { teams: 16, players: 80, matches: 15 }
+      if (!response.ok) return []
       const data = await response.json()
-      return data && data.length > 0 ? data[0] : { teams: 16, players: 80, matches: 15 }
+      return data || []
     } catch (error) {
       console.error("[v0] Error fetching hero stats:", error)
-      return { teams: 16, players: 80, matches: 15 }
+      return []
+    }
+  },
+
+  async updateHeroStats(heroId, stats) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats?id=eq.${heroId}`, {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_KEY,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(stats),
+      })
+      if (!response.ok) throw new Error(await response.text())
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error("[v0] Error updating hero stats:", error)
+      throw error
     }
   },
 
@@ -144,15 +166,16 @@ window.SupabaseClient = {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_matches`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
           Prefer: "return=representation",
         },
         body: JSON.stringify(match),
       })
       if (!response.ok) throw new Error(await response.text())
-      console.log("[v0] Match saved:", match.id)
-      return await response.json()
+      const data = await response.json()
+      console.log("[v0] Match saved")
+      return data
     } catch (error) {
       console.error("[v0] Error saving match:", error)
       throw error
@@ -161,43 +184,48 @@ window.SupabaseClient = {
 
   async getTournamentMatches() {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_matches?order=created_at.desc`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_matches`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
         },
       })
       if (!response.ok) return []
-      return (await response.json()) || []
+      const data = await response.json()
+      return data || []
     } catch (error) {
       console.error("[v0] Error fetching matches:", error)
       return []
     }
   },
 
-  async deleteMatch(matchId) {
+  async updateTournamentMatch(matchId, updates) {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_matches?id=eq.${matchId}`, {
-        method: "DELETE",
+        method: "PATCH",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
+          Prefer: "return=representation",
         },
+        body: JSON.stringify(updates),
       })
       if (!response.ok) throw new Error(await response.text())
+      const data = await response.json()
+      return data
     } catch (error) {
-      console.error("[v0] Error deleting match:", error)
+      console.error("[v0] Error updating match:", error)
       throw error
     }
   },
 
-  async saveMap(map) {
+  async saveTournamentMap(map) {
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_maps`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
           Prefer: "return=representation",
         },
@@ -211,36 +239,21 @@ window.SupabaseClient = {
     }
   },
 
-  async getMaps() {
+  async getTournamentMaps() {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_maps?order=created_at.asc`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_maps`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
         },
       })
       if (!response.ok) return []
-      return (await response.json()) || []
+      const data = await response.json()
+      return data || []
     } catch (error) {
       console.error("[v0] Error fetching maps:", error)
       return []
-    }
-  },
-
-  async deleteMap(mapId) {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_maps?id=eq.${mapId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": "application/json",
-        },
-      })
-      if (!response.ok) throw new Error(await response.text())
-    } catch (error) {
-      console.error("[v0] Error deleting map:", error)
-      throw error
     }
   },
 
@@ -249,7 +262,7 @@ window.SupabaseClient = {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/map_bans`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
           Prefer: "return=representation",
         },
@@ -265,99 +278,60 @@ window.SupabaseClient = {
 
   async getMapBans() {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/map_bans?order=timestamp.desc`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/map_bans`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
         },
       })
       if (!response.ok) return []
-      return (await response.json()) || []
+      const data = await response.json()
+      return data || []
     } catch (error) {
       console.error("[v0] Error fetching map bans:", error)
       return []
     }
   },
 
-  async deleteMapBan(banId) {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/map_bans?id=eq.${banId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": "application/json",
-        },
-      })
-      if (!response.ok) throw new Error(await response.text())
-    } catch (error) {
-      console.error("[v0] Error deleting map ban:", error)
-      throw error
-    }
-  },
-
-  async saveTournamentState(state) {
-    try {
-      const getResponse = await fetch(`${SUPABASE_URL}/rest/v1/tournament_state?id=eq.1`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": "application/json",
-        },
-      })
-      const existing = await getResponse.json()
-
-      if (existing && existing.length > 0) {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_state?id=eq.1`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            Prefer: "return=representation",
-          },
-          body: JSON.stringify({ state, updated_at: new Date().toISOString() }),
-        })
-        if (!response.ok) throw new Error(await response.text())
-        return await response.json()
-      } else {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_state`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            Prefer: "return=representation",
-          },
-          body: JSON.stringify({ id: 1, state, updated_at: new Date().toISOString() }),
-        })
-        if (!response.ok) throw new Error(await response.text())
-        return await response.json()
-      }
-    } catch (error) {
-      console.error("[v0] Error saving tournament state:", error)
-      throw error
-    }
-  },
-
   async getTournamentState() {
     try {
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_state?id=eq.1`, {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_state`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
           "Content-Type": "application/json",
         },
       })
-      if (!response.ok) return { quarterfinals: [], semifinals: [], final: [], champion: null }
+      if (!response.ok) return null
       const data = await response.json()
-      return data && data.length > 0 ? data[0].state : { quarterfinals: [], semifinals: [], final: [], champion: null }
+      return data?.[0] || null
     } catch (error) {
       console.error("[v0] Error fetching tournament state:", error)
-      return { quarterfinals: [], semifinals: [], final: [], champion: null }
+      return null
+    }
+  },
+
+  async updateTournamentState(updates) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/tournament_state`, {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_KEY,
+          "Content-Type": "application/json",
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(updates),
+      })
+      if (!response.ok) throw new Error(await response.text())
+      const data = await response.json()
+      return data
+    } catch (error) {
+      console.error("[v0] Error updating tournament state:", error)
+      throw error
     }
   },
 }
-
-window.supabase = window.SupabaseClient
 
 setInterval(async () => {
   try {
@@ -373,15 +347,3 @@ setInterval(async () => {
     console.log("[v0] Polling error:", error.message)
   }
 }, 2000)
-
-try {
-  module.exports = { supabase: window.SupabaseClient }
-} catch (e) {
-  // If module.exports doesn't exist, we're in a browser environment with script tags
-  // window.SupabaseClient is already available globally
-}
-
-// For ES6 module syntax (if needed)
-if (typeof exports !== "undefined") {
-  exports.supabase = window.SupabaseClient
-}
