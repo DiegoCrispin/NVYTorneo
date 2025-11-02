@@ -27,18 +27,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     })
   }
 
-  // Wait for SupabaseClient to be available
-  let attempts = 0
-  while (!window.SupabaseClient && attempts < 50) {
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    attempts++
-  }
-
-  if (!window.SupabaseClient) {
-    console.error("[v0] Supabase client failed to initialize")
-    return
-  }
-
   // Load all data from Supabase
   await loadAllData()
   initAdminNavigation()
