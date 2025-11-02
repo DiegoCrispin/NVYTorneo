@@ -1,5 +1,4 @@
-// Registro de equipos - Migrado a Supabase
-// Mantiene toda la funcionalidad original pero usa Supabase en lugar de localStorage
+/// const XLSX = require("xlsx") - This line was causing script execution to stop
 
 // Countries list with phone codes and digit requirements
 const COUNTRIES = {
@@ -25,28 +24,10 @@ const COUNTRIES = {
 
 let logoImage = null
 const anime = window.anime
-const XLSX = window.XLSX
-const db = window.db
+const XLSX = window.XLSX // Declare the XLSX variable here
 
-function waitForDB() {
-  return new Promise((resolve) => {
-    if (window.db) {
-      resolve()
-    } else {
-      const checkDB = setInterval(() => {
-        if (window.db) {
-          clearInterval(checkDB)
-          resolve()
-        }
-      }, 100)
-    }
-  })
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-  console.log("[v0] DOMContentLoaded - Esperando DB")
-  await waitForDB()
-  console.log("[v0] DB disponible, inicializando formulario")
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("[v0] DOMContentLoaded - Inicializando formulario")
   initNavigation()
   initForm()
   addInitialPlayers()
@@ -97,41 +78,37 @@ function handleLogoUpload(e) {
 
 function addInitialPlayers() {
   console.log("[v0] Agregando 20 jugadores iniciales")
-  const container = document.getElementById("playersContainer")
+  for (let i = 0; i < 20; i++) {
+    addPlayer()
+  }
+  console.log("[v0] Jugadores iniciales agregados")
+}
 
-  if (!container) {
-    console.error("[v0] Container de jugadores no encontrado")
+function addPlayer() {
+  const container = document.getElementById("playersContainer")
+  const count = container.children.length
+
+  if (count >= 24) {
+    alert("Máximo de 24 jugadores alcanzado")
     return
   }
 
-  container.innerHTML = ""
-
-  for (let i = 0; i < 20; i++) {
-    const playerDiv = createPlayerElement(i)
-    container.appendChild(playerDiv)
-  }
-
-  console.log("[v0] Jugadores iniciales agregados:", container.children.length)
-  updatePlayerCount()
-}
-
-function createPlayerElement(index) {
   const playerDiv = document.createElement("div")
   playerDiv.className = "player-input-group"
   playerDiv.innerHTML = `
     <div class="player-header">
-      <span class="player-number">#${index + 1}</span>
+      <span class="player-number">#${count + 1}</span>
       <div class="player-role-selector">
         <label class="role-label">
-          <input type="radio" name="role_${index}" value="leader" class="role-radio">
+          <input type="radio" name="role_${count}" value="leader" class="role-radio">
           <span>Líder</span>
         </label>
         <label class="role-label">
-          <input type="radio" name="role_${index}" value="member" class="role-radio" checked>
+          <input type="radio" name="role_${count}" value="member" class="role-radio" checked>
           <span>Miembro</span>
         </label>
         <label class="role-label">
-          <input type="radio" name="role_${index}" value="substitute" class="role-radio">
+          <input type="radio" name="role_${count}" value="substitute" class="role-radio">
           <span>Suplente</span>
         </label>
       </div>
@@ -140,17 +117,17 @@ function createPlayerElement(index) {
     <div class="player-inputs">
       <div class="form-group">
         <label>Nombre del Jugador</label>
-        <input type="text" name="playerName_${index}" placeholder="Nombre" class="player-name" maxlength="50" required>
+        <input type="text" name="playerName_${count}" placeholder="Nombre" class="player-name" maxlength="50">
       </div>
 
       <div class="form-group">
         <label>UID (20 dígitos)</label>
-        <input type="text" name="playerUID_${index}" placeholder="12345678901234567890" class="player-uid" maxlength="20" pattern="\\d{20}" required>
+        <input type="text" name="playerUID_${count}" placeholder="12345678901234567890" class="player-uid" maxlength="20" pattern="\\d{20}">
       </div>
 
       <div class="form-group">
         <label>País</label>
-        <select name="playerCountry_${index}" class="player-country" required>
+        <select name="playerCountry_${count}" class="player-country">
           <option value="">Seleccionar país</option>
           ${Object.entries(COUNTRIES)
             .map(([key, { name, flag }]) => `<option value="${key}">${flag} ${name}</option>`)
@@ -160,11 +137,14 @@ function createPlayerElement(index) {
 
       <div class="form-group">
         <label>Teléfono</label>
-        <input type="tel" name="playerPhone_${index}" placeholder="Número de teléfono" class="player-phone" data-player-index="${index}" required>
+        <input type="tel" name="playerPhone_${count}" placeholder="Número de teléfono" class="player-phone" data-player-index="${count}">
         <small class="phone-digits-hint"></small>
       </div>
     </div>
   `
+
+  container.appendChild(playerDiv)
+  updatePlayerCount()
 
   const countrySelect = playerDiv.querySelector(".player-country")
   const phoneInput = playerDiv.querySelector(".player-phone")
@@ -174,8 +154,7 @@ function createPlayerElement(index) {
     const hint = playerDiv.querySelector(".phone-digits-hint")
     if (country && COUNTRIES[country]) {
       const digits = COUNTRIES[country].digits
-      const countryCode = COUNTRIES[country].code
-      hint.textContent = `+${countryCode} - Ingresa ${digits} dígitos`
+      hint.textContent = `Ingresa ${digits} dígitos`
       phoneInput.maxLength = digits
       phoneInput.pattern = `\\d{${digits}}`
     } else {
@@ -184,44 +163,35 @@ function createPlayerElement(index) {
       phoneInput.pattern = ""
     }
   })
-
-  return playerDiv
 }
 
-function addPlayer() {
+function removePlayer() {
   const container = document.getElementById("playersContainer")
-
-  if (!container) {
-    console.error("[v0] Container de jugadores no encontrado")
-    return
-  }
-
   const count = container.children.length
 
-  if (count >= 24) {
-    alert("Máximo de 24 jugadores alcanzado")
+  if (count <= 1) {
+    alert("Debe haber al menos 1 jugador")
     return
   }
 
-  const playerDiv = createPlayerElement(count)
-  container.appendChild(playerDiv)
+  container.lastChild.remove()
   updatePlayerCount()
-
-  console.log("[v0] Jugador agregado, total:", container.children.length)
 }
 
-// Declare updatePlayerCount and COUNTRIES variables
 function updatePlayerCount() {
   const container = document.getElementById("playersContainer")
-  const count = container ? container.children.length : 0
-  console.log("[v0] Actualizando contador de jugadores:", count)
+  const count = container.children.length
+  document.getElementById("currentCount").textContent = count
 }
-async function handleFormSubmit(e) {
+
+function handleFormSubmit(e) {
   e.preventDefault()
   console.log("[v0] Iniciando envío del formulario")
 
+  // Gather form data
   const teamName = document.getElementById("teamName").value.trim()
   const teamAbbr = document.getElementById("teamAbbr").value.trim()
+
   const hasLogo = logoImage !== null
 
   if (!teamName) {
@@ -251,7 +221,6 @@ async function handleFormSubmit(e) {
       name: nameInput ? nameInput.value.trim() : "",
       uid: uidInput ? uidInput.value.trim() : "",
       country: countrySelect ? countrySelect.value : "",
-      countryCode: countrySelect && countrySelect.value ? COUNTRIES[countrySelect.value].code : "",
       phone: phoneInput ? phoneInput.value.trim() : "",
       role: roleInput ? roleInput.value : "member",
     }
@@ -262,7 +231,7 @@ async function handleFormSubmit(e) {
   const totalPlayers = players.length
   if (totalPlayers < 20) {
     alert(
-      `ERROR: El equipo debe tener al menos 20 jugadores.\nActualmente tienes ${totalPlayers}.\nAgrega ${20 - totalPlayers} jugador(es) más.`,
+      `ERROR: El equipo debe tener exactamente 20 jugadores.\nActualmente tienes ${totalPlayers}.\nAgrega ${20 - totalPlayers} jugador(es) más.`,
     )
     return
   }
@@ -279,7 +248,7 @@ async function handleFormSubmit(e) {
   if (incompletePlayer !== -1) {
     const playerNum = incompletePlayer + 1
     alert(
-      `ERROR: El jugador #${playerNum} está incompleto.\n\nTodos los jugadores DEBEN tener:\n- Nombre\n- UID (20 dígitos)\n- País\n- Teléfono\n\nPor favor completa todos los campos antes de guardar.`,
+      `ERROR: El jugador #${playerNum} está incompleto.\n\nTodos los 20 jugadores DEBEN tener:\n- Nombre\n- UID (20 dígitos)\n- País\n- Teléfono\n\nPor favor completa todos los campos antes de guardar.`,
     )
     return
   }
@@ -299,85 +268,69 @@ async function handleFormSubmit(e) {
     return
   }
 
-  const assignedGroup = await assignGroupAutomatically()
+  const assignedGroup = assignGroupAutomatically()
 
   if (!assignedGroup) {
     alert("ERROR: No hay grupos disponibles. Todos los grupos están llenos.")
     return
   }
 
-  try {
-    const team = {
-      name: teamName,
-      abbreviation: teamAbbr,
-      group: assignedGroup,
-      logo: logoImage,
-      points: 0,
-    }
-
-    console.log("[v0] Creando equipo en Supabase:", team.name)
-    const createdTeam = await window.db.createTeam(team)
-
-    if (!createdTeam) {
-      throw new Error("Error al crear el equipo")
-    }
-
-    console.log("[v0] Equipo creado con ID:", createdTeam.id)
-
-    const playersPromises = players.map((player) => {
-      return window.db.createPlayer({
-        name: player.name,
-        uid: player.uid,
-        team_id: createdTeam.id,
-        role: player.role,
-        country: player.country,
-        country_code: player.countryCode,
-        phone: player.phone,
-        kills: 0,
-        assists: 0,
-        revives: 0,
-        vehicle_damage: 0,
-      })
-    })
-
-    await Promise.all(playersPromises)
-    console.log("[v0] Jugadores creados exitosamente")
-
-    showSuccessModal(teamName, assignedGroup)
-  } catch (error) {
-    console.error("[v0] Error al guardar en Supabase:", error)
-    alert("ERROR: No se pudo guardar el equipo. Intenta de nuevo.")
+  // Create team object
+  const team = {
+    id: Date.now().toString(),
+    name: teamName,
+    abbreviation: teamAbbr,
+    group: assignedGroup,
+    logo: logoImage,
+    players: players,
+    createdAt: new Date().toISOString(),
+    points: 0,
   }
+
+  console.log("[v0] Equipo creado:", team.name, "asignado al grupo:", assignedGroup)
+
+  try {
+    const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
+    registeredTeams.push(team)
+    localStorage.setItem("registeredTeams", JSON.stringify(registeredTeams))
+    console.log("[v0] Equipo guardado en localStorage:", team.id)
+  } catch (error) {
+    console.error("[v0] Error al guardar en localStorage:", error)
+    alert("ERROR: No se pudo guardar el equipo. Intenta de nuevo.")
+    return
+  }
+
+  // Sync with admin
+  try {
+    const syncChannel = new BroadcastChannel("adminSync")
+    syncChannel.postMessage({ type: "refresh" })
+    console.log("[v0] Mensaje de sync enviado al admin")
+  } catch (error) {
+    console.warn("[v0] BroadcastChannel no disponible, continuando sin sync")
+  }
+
+  showSuccessModal(teamName, assignedGroup)
 }
 
-async function assignGroupAutomatically() {
-  try {
-    const teams = await window.db.getTeams()
-    const groups = { A: 0, B: 0, C: 0, D: 0 }
+function getRandomAvailableGroup() {
+  const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
+  const groups = { A: 0, B: 0, C: 0, D: 0 }
 
-    teams.forEach((team) => {
-      if (groups.hasOwnProperty(team.group)) {
-        groups[team.group]++
-      }
-    })
-
-    const availableGroups = Object.entries(groups)
-      .filter(([group, count]) => count < 4)
-      .map(([group]) => group)
-
-    if (availableGroups.length === 0) {
-      return null
+  registeredTeams.forEach((team) => {
+    if (groups.hasOwnProperty(team.group)) {
+      groups[team.group]++
     }
+  })
 
-    const groupCounts = Object.entries(groups).filter(([g]) => availableGroups.includes(g))
-    const [assignedGroup] = groupCounts.reduce((prev, curr) => (prev[1] < curr[1] ? prev : curr))
+  const availableGroups = Object.entries(groups)
+    .filter(([group, count]) => count < 4)
+    .map(([group]) => group)
 
-    console.log("[v0] Grupo asignado automáticamente:", assignedGroup)
-    return assignedGroup
-  } catch (error) {
-    console.error("[v0] Error al asignar grupo:", error)
-    return "A"
+  if (availableGroups.length === 0) {
+    return null
   }
+
+  return availableGroups[Math.floor(Math.random() * availableGroups.length)]
 }
 
 function showSuccessModal(teamName, assignedGroup) {
@@ -401,3 +354,167 @@ function showSuccessModal(teamName, assignedGroup) {
 function redirectToHome() {
   window.location.href = "NVYTorneo.html"
 }
+
+function exportTeamToExcel(teamData) {
+  if (!XLSX || !XLSX.utils) {
+    alert("La librería XLSX no está cargada. Verificando...")
+    return
+  }
+
+  const workbook = XLSX.utils.book_new()
+
+  // Sheet 1 - Team Information
+  const teamInfoData = [
+    ["INFORMACIÓN DEL EQUIPO"],
+    [],
+    ["Nombre", teamData.name || ""],
+    ["Abreviación", teamData.abbreviation || ""],
+    ["Grupo", teamData.group || ""],
+    ["Fecha de Registro", teamData.createdAt ? new Date(teamData.createdAt).toLocaleDateString("es-ES") : ""],
+    ["Total de Jugadores", teamData.players ? teamData.players.length : 0],
+  ]
+
+  const teamSheet = XLSX.utils.aoa_to_sheet(teamInfoData)
+  teamSheet["!cols"] = [{ wch: 25 }, { wch: 30 }]
+  XLSX.utils.book_append_sheet(workbook, teamSheet, "Información")
+
+  // Sheet 2 - Players
+  const playersData = [
+    ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño Vehículos"],
+  ]
+  ;(teamData.players || []).forEach((player) => {
+    playersData.push([
+      player.name || "",
+      player.uid || "",
+      player.country || "",
+      player.phone || "",
+      player.role || "",
+      (player.stats && player.stats.kills) || 0,
+      (player.stats && player.stats.assists) || 0,
+      (player.stats && player.stats.revives) || 0,
+      (player.stats && player.stats.vehicleDamage) || 0,
+    ])
+  })
+
+  const playersSheet = XLSX.utils.aoa_to_sheet(playersData)
+  playersSheet["!cols"] = [
+    { wch: 20 },
+    { wch: 25 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 12 },
+    { wch: 10 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 15 },
+  ]
+  XLSX.utils.book_append_sheet(workbook, playersSheet, "Jugadores")
+
+  XLSX.writeFile(workbook, `${teamData.name || "Equipo"}_Roster.xlsx`)
+}
+
+function exportAllTeamsToExcel(registeredTeams) {
+  if (!registeredTeams || registeredTeams.length === 0) {
+    alert("No hay equipos para exportar")
+    return
+  }
+
+  if (!XLSX || !XLSX.utils) {
+    alert("La librería XLSX no está cargada")
+    return
+  }
+
+  const workbook = XLSX.utils.book_new()
+
+  // Summary sheet
+  const summaryData = [
+    ["RESUMEN DE EQUIPOS REGISTRADOS"],
+    [],
+    ["Total de Equipos", registeredTeams.length],
+    ["Total de Jugadores", registeredTeams.reduce((sum, t) => sum + (t.players ? t.players.length : 0), 0)],
+    [],
+    ["Nombre", "Abreviación", "Grupo", "Jugadores", "Fecha Registro"],
+  ]
+
+  registeredTeams.forEach((team) => {
+    summaryData.push([
+      team.name || "",
+      team.abbreviation || "",
+      team.group || "",
+      team.players ? team.players.length : 0,
+      team.createdAt ? new Date(team.createdAt).toLocaleDateString("es-ES") : "",
+    ])
+  })
+
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData)
+  summarySheet["!cols"] = [{ wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 15 }]
+  XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumen")
+
+  // Individual team sheets
+  registeredTeams.forEach((team) => {
+    const teamData = [
+      [`EQUIPO: ${team.name || ""}`],
+      [`Abreviación: ${team.abbreviation || ""}`],
+      [`Grupo: ${team.group || ""}`],
+      [],
+      ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño Vehículos"],
+    ]
+    ;(team.players || []).forEach((player) => {
+      teamData.push([
+        player.name || "",
+        player.uid || "",
+        player.country || "",
+        player.phone || "",
+        player.role || "",
+        (player.stats && player.stats.kills) || 0,
+        (player.stats && player.stats.assists) || 0,
+        (player.stats && player.stats.revives) || 0,
+        (player.stats && player.stats.vehicleDamage) || 0,
+      ])
+    })
+
+    const sheet = XLSX.utils.aoa_to_sheet(teamData)
+    sheet["!cols"] = [
+      { wch: 20 },
+      { wch: 25 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 },
+    ]
+    XLSX.utils.book_append_sheet(workbook, sheet, team.abbreviation || team.name || `Equipo_${team.id}`)
+  })
+
+  XLSX.writeFile(workbook, `Todos_los_Equipos_${new Date().toISOString().split("T")[0]}.xlsx`)
+}
+
+function assignGroupAutomatically() {
+  const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
+  const groups = { A: 0, B: 0, C: 0, D: 0 } // Changed from 5 groups (A-E) to 4 groups (A-D)
+
+  registeredTeams.forEach((team) => {
+    if (groups.hasOwnProperty(team.group)) {
+      groups[team.group]++
+    }
+  })
+
+  // Find all groups that don't have 4 teams yet
+  const availableGroups = Object.entries(groups)
+    .filter(([group, count]) => count < 4)
+    .map(([group]) => group)
+
+  if (availableGroups.length === 0) {
+    return null // No groups available
+  }
+
+  // Assign to the group with the fewest teams
+  const groupCounts = Object.entries(groups).filter(([g]) => availableGroups.includes(g))
+  const [assignedGroup] = groupCounts.reduce((prev, curr) => (prev[1] < curr[1] ? prev : curr))
+
+  console.log("[v0] Grupo asignado automáticamente:", assignedGroup)
+  return assignedGroup
+}
+
