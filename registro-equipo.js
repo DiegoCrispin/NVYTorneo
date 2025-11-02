@@ -1,6 +1,3 @@
-/// const XLSX = require("xlsx") - This line was causing script execution to stop
-
-// Countries list with phone codes and digit requirements
 const COUNTRIES = {
   argentina: { name: "Argentina", code: "54", flag: "🇦🇷", digits: 10 },
   bolivia: { name: "Bolivia", code: "591", flag: "🇧🇴", digits: 8 },
@@ -24,10 +21,10 @@ const COUNTRIES = {
 
 let logoImage = null
 const anime = window.anime
-const XLSX = window.XLSX // Declare the XLSX variable here
+const XLSX = window.XLSX
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("[v0] DOMContentLoaded - Inicializando formulario")
+  console.log("[v0] Registro equipo - Inicializando")
   initNavigation()
   initForm()
   addInitialPlayers()
@@ -57,10 +54,10 @@ function initForm() {
   const addBtn = document.getElementById("addPlayerBtn")
   const removeBtn = document.getElementById("removePlayerBtn")
 
-  logoInput.addEventListener("change", handleLogoUpload)
-  form.addEventListener("submit", handleFormSubmit)
-  addBtn.addEventListener("click", addPlayer)
-  removeBtn.addEventListener("click", removePlayer)
+  if (logoInput) logoInput.addEventListener("change", handleLogoUpload)
+  if (form) form.addEventListener("submit", handleFormSubmit)
+  if (addBtn) addBtn.addEventListener("click", addPlayer)
+  if (removeBtn) removeBtn.addEventListener("click", removePlayer)
 }
 
 function handleLogoUpload(e) {
@@ -70,22 +67,24 @@ function handleLogoUpload(e) {
     reader.onload = (event) => {
       logoImage = event.target.result
       const preview = document.getElementById("logoPreview")
-      preview.innerHTML = `<img src="${logoImage}" alt="Logo preview">`
+      if (preview) {
+        preview.innerHTML = `<img src="${logoImage}" alt="Logo preview">`
+      }
     }
     reader.readAsDataURL(file)
   }
 }
 
 function addInitialPlayers() {
-  console.log("[v0] Agregando 20 jugadores iniciales")
   for (let i = 0; i < 20; i++) {
     addPlayer()
   }
-  console.log("[v0] Jugadores iniciales agregados")
 }
 
 function addPlayer() {
   const container = document.getElementById("playersContainer")
+  if (!container) return
+
   const count = container.children.length
 
   if (count >= 24) {
@@ -167,13 +166,10 @@ function addPlayer() {
 
 function removePlayer() {
   const container = document.getElementById("playersContainer")
-  const count = container.children.length
-
-  if (count <= 1) {
+  if (container.children.length <= 1) {
     alert("Debe haber al menos 1 jugador")
     return
   }
-
   container.lastChild.remove()
   updatePlayerCount()
 }
@@ -181,14 +177,14 @@ function removePlayer() {
 function updatePlayerCount() {
   const container = document.getElementById("playersContainer")
   const count = container.children.length
-  document.getElementById("currentCount").textContent = count
+  const currentEl = document.getElementById("currentCount")
+  if (currentEl) currentEl.textContent = count
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault()
   console.log("[v0] Iniciando envío del formulario")
 
-  // Gather form data
   const teamName = document.getElementById("teamName").value.trim()
   const teamAbbr = document.getElementById("teamAbbr").value.trim()
 
@@ -226,13 +222,9 @@ function handleFormSubmit(e) {
     }
   })
 
-  console.log("[v0] Datos de jugadores extraídos:", players.length)
-
   const totalPlayers = players.length
   if (totalPlayers < 20) {
-    alert(
-      `ERROR: El equipo debe tener exactamente 20 jugadores.\nActualmente tienes ${totalPlayers}.\nAgrega ${20 - totalPlayers} jugador(es) más.`,
-    )
+    alert(`ERROR: El equipo debe tener exactamente 20 jugadores.\nActualmente tienes ${totalPlayers}.`)
     return
   }
 
@@ -248,15 +240,13 @@ function handleFormSubmit(e) {
   if (incompletePlayer !== -1) {
     const playerNum = incompletePlayer + 1
     alert(
-      `ERROR: El jugador #${playerNum} está incompleto.\n\nTodos los 20 jugadores DEBEN tener:\n- Nombre\n- UID (20 dígitos)\n- País\n- Teléfono\n\nPor favor completa todos los campos antes de guardar.`,
+      `ERROR: El jugador #${playerNum} está incompleto.\n\nTodos los jugadores DEBEN tener:\n- Nombre\n- UID (20 dígitos)\n- País\n- Teléfono`,
     )
     return
   }
 
   const leaderCount = players.filter((player) => player.role === "leader").length
   const substituteCount = players.filter((player) => player.role === "substitute").length
-
-  console.log("[v0] Líderes:", leaderCount, "Suplentes:", substituteCount)
 
   if (leaderCount !== 1) {
     alert(`ERROR: El equipo debe tener exactamente 1 líder.\nActualmente tienes ${leaderCount} líder(es).`)
@@ -268,14 +258,13 @@ function handleFormSubmit(e) {
     return
   }
 
-  const assignedGroup = assignGroupAutomatically()
+  const assignedGroup = await assignGroupAutomatically()
 
   if (!assignedGroup) {
     alert("ERROR: No hay grupos disponibles. Todos los grupos están llenos.")
     return
   }
 
-  // Create team object
   const team = {
     id: Date.now().toString(),
     name: teamName,
@@ -283,37 +272,27 @@ function handleFormSubmit(e) {
     group: assignedGroup,
     logo: logoImage,
     players: players,
-    createdAt: new Date().toISOString(),
+    created_at: new Date().toISOString(),
     points: 0,
   }
 
-  console.log("[v0] Equipo creado:", team.name, "asignado al grupo:", assignedGroup)
-
   try {
-    const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
-    registeredTeams.push(team)
-    localStorage.setItem("registeredTeams", JSON.stringify(registeredTeams))
-    console.log("[v0] Equipo guardado en localStorage:", team.id)
+    const response = await window.supabase.saveRegisteredTeam(team)
+    if (!response) {
+      alert("ERROR: No se pudo guardar el equipo. Intenta de nuevo.")
+      return
+    }
+
+    console.log("[v0] Equipo guardado en Supabase:", team.id)
+    showSuccessModal(teamName, assignedGroup)
   } catch (error) {
-    console.error("[v0] Error al guardar en localStorage:", error)
+    console.error("[v0] Error al guardar en Supabase:", error)
     alert("ERROR: No se pudo guardar el equipo. Intenta de nuevo.")
-    return
   }
-
-  // Sync with admin
-  try {
-    const syncChannel = new BroadcastChannel("adminSync")
-    syncChannel.postMessage({ type: "refresh" })
-    console.log("[v0] Mensaje de sync enviado al admin")
-  } catch (error) {
-    console.warn("[v0] BroadcastChannel no disponible, continuando sin sync")
-  }
-
-  showSuccessModal(teamName, assignedGroup)
 }
 
-function getRandomAvailableGroup() {
-  const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
+async function assignGroupAutomatically() {
+  const registeredTeams = await window.supabase.fetchRegisteredTeams()
   const groups = { A: 0, B: 0, C: 0, D: 0 }
 
   registeredTeams.forEach((team) => {
@@ -330,24 +309,31 @@ function getRandomAvailableGroup() {
     return null
   }
 
-  return availableGroups[Math.floor(Math.random() * availableGroups.length)]
+  const groupCounts = Object.entries(groups).filter(([g]) => availableGroups.includes(g))
+  const [assignedGroup] = groupCounts.reduce((prev, curr) => (prev[1] < curr[1] ? prev : curr))
+
+  return assignedGroup
 }
 
 function showSuccessModal(teamName, assignedGroup) {
   const modal = document.getElementById("successModal")
   const message = document.getElementById("successMessage")
-  message.textContent = `¡El equipo "${teamName}" ha sido registrado exitosamente en el Grupo ${assignedGroup}! Puedes verlo en el panel de admin.`
+  if (message) {
+    message.textContent = `¡El equipo "${teamName}" ha sido registrado exitosamente en el Grupo ${assignedGroup}! Puedes verlo en el panel de admin.`
+  }
 
-  modal.style.display = "block"
+  if (modal) {
+    modal.style.display = "block"
 
-  if (anime) {
-    anime({
-      targets: ".modal-content",
-      scale: [0.8, 1],
-      opacity: [0, 1],
-      duration: 400,
-      easing: "easeOutExpo",
-    })
+    if (anime) {
+      anime({
+        targets: ".modal-content",
+        scale: [0.8, 1],
+        opacity: [0, 1],
+        duration: 400,
+        easing: "easeOutExpo",
+      })
+    }
   }
 }
 
@@ -357,20 +343,19 @@ function redirectToHome() {
 
 function exportTeamToExcel(teamData) {
   if (!XLSX || !XLSX.utils) {
-    alert("La librería XLSX no está cargada. Verificando...")
+    alert("La librería XLSX no está cargada.")
     return
   }
 
   const workbook = XLSX.utils.book_new()
 
-  // Sheet 1 - Team Information
   const teamInfoData = [
     ["INFORMACIÓN DEL EQUIPO"],
     [],
     ["Nombre", teamData.name || ""],
     ["Abreviación", teamData.abbreviation || ""],
     ["Grupo", teamData.group || ""],
-    ["Fecha de Registro", teamData.createdAt ? new Date(teamData.createdAt).toLocaleDateString("es-ES") : ""],
+    ["Fecha de Registro", teamData.created_at ? new Date(teamData.created_at).toLocaleDateString("es-ES") : ""],
     ["Total de Jugadores", teamData.players ? teamData.players.length : 0],
   ]
 
@@ -378,7 +363,6 @@ function exportTeamToExcel(teamData) {
   teamSheet["!cols"] = [{ wch: 25 }, { wch: 30 }]
   XLSX.utils.book_append_sheet(workbook, teamSheet, "Información")
 
-  // Sheet 2 - Players
   const playersData = [
     ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño Vehículos"],
   ]
@@ -426,7 +410,6 @@ function exportAllTeamsToExcel(registeredTeams) {
 
   const workbook = XLSX.utils.book_new()
 
-  // Summary sheet
   const summaryData = [
     ["RESUMEN DE EQUIPOS REGISTRADOS"],
     [],
@@ -442,7 +425,7 @@ function exportAllTeamsToExcel(registeredTeams) {
       team.abbreviation || "",
       team.group || "",
       team.players ? team.players.length : 0,
-      team.createdAt ? new Date(team.createdAt).toLocaleDateString("es-ES") : "",
+      team.created_at ? new Date(team.created_at).toLocaleDateString("es-ES") : "",
     ])
   })
 
@@ -450,14 +433,13 @@ function exportAllTeamsToExcel(registeredTeams) {
   summarySheet["!cols"] = [{ wch: 20 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 15 }]
   XLSX.utils.book_append_sheet(workbook, summarySheet, "Resumen")
 
-  // Individual team sheets
   registeredTeams.forEach((team) => {
     const teamData = [
       [`EQUIPO: ${team.name || ""}`],
       [`Abreviación: ${team.abbreviation || ""}`],
       [`Grupo: ${team.group || ""}`],
       [],
-      ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño Vehículos"],
+      ["Nombre", "UID", "País", "Teléfono", "Rol", "Bajas", "Asistencias", "Revividas", "Daño a Vehículos"],
     ]
     ;(team.players || []).forEach((player) => {
       teamData.push([
@@ -490,31 +472,3 @@ function exportAllTeamsToExcel(registeredTeams) {
 
   XLSX.writeFile(workbook, `Todos_los_Equipos_${new Date().toISOString().split("T")[0]}.xlsx`)
 }
-
-function assignGroupAutomatically() {
-  const registeredTeams = JSON.parse(localStorage.getItem("registeredTeams")) || []
-  const groups = { A: 0, B: 0, C: 0, D: 0 } // Changed from 5 groups (A-E) to 4 groups (A-D)
-
-  registeredTeams.forEach((team) => {
-    if (groups.hasOwnProperty(team.group)) {
-      groups[team.group]++
-    }
-  })
-
-  // Find all groups that don't have 4 teams yet
-  const availableGroups = Object.entries(groups)
-    .filter(([group, count]) => count < 4)
-    .map(([group]) => group)
-
-  if (availableGroups.length === 0) {
-    return null // No groups available
-  }
-
-  // Assign to the group with the fewest teams
-  const groupCounts = Object.entries(groups).filter(([g]) => availableGroups.includes(g))
-  const [assignedGroup] = groupCounts.reduce((prev, curr) => (prev[1] < curr[1] ? prev : curr))
-
-  console.log("[v0] Grupo asignado automáticamente:", assignedGroup)
-  return assignedGroup
-}
-
