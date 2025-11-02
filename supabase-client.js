@@ -359,8 +359,6 @@ window.SupabaseClient = {
 
 window.supabase = window.SupabaseClient
 
-export const supabase = window.SupabaseClient
-
 setInterval(async () => {
   try {
     const teams = await window.SupabaseClient.getRegisteredTeams()
@@ -375,3 +373,15 @@ setInterval(async () => {
     console.log("[v0] Polling error:", error.message)
   }
 }, 2000)
+
+try {
+  module.exports = { supabase: window.SupabaseClient }
+} catch (e) {
+  // If module.exports doesn't exist, we're in a browser environment with script tags
+  // window.SupabaseClient is already available globally
+}
+
+// For ES6 module syntax (if needed)
+if (typeof exports !== "undefined") {
+  exports.supabase = window.SupabaseClient
+}
