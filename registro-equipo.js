@@ -104,48 +104,34 @@ function addInitialPlayers() {
     return
   }
 
-  // Limpiar el container primero
   container.innerHTML = ""
 
-  // Agregar 20 jugadores
   for (let i = 0; i < 20; i++) {
-    addPlayer()
+    const playerDiv = createPlayerElement(i)
+    container.appendChild(playerDiv)
   }
 
   console.log("[v0] Jugadores iniciales agregados:", container.children.length)
+  updatePlayerCount()
 }
 
-function addPlayer() {
-  const container = document.getElementById("playersContainer")
-
-  if (!container) {
-    console.error("[v0] Container de jugadores no encontrado")
-    return
-  }
-
-  const count = container.children.length
-
-  if (count >= 24) {
-    alert("Máximo de 24 jugadores alcanzado")
-    return
-  }
-
+function createPlayerElement(index) {
   const playerDiv = document.createElement("div")
   playerDiv.className = "player-input-group"
   playerDiv.innerHTML = `
     <div class="player-header">
-      <span class="player-number">#${count + 1}</span>
+      <span class="player-number">#${index + 1}</span>
       <div class="player-role-selector">
         <label class="role-label">
-          <input type="radio" name="role_${count}" value="leader" class="role-radio">
+          <input type="radio" name="role_${index}" value="leader" class="role-radio">
           <span>Líder</span>
         </label>
         <label class="role-label">
-          <input type="radio" name="role_${count}" value="member" class="role-radio" checked>
+          <input type="radio" name="role_${index}" value="member" class="role-radio" checked>
           <span>Miembro</span>
         </label>
         <label class="role-label">
-          <input type="radio" name="role_${count}" value="substitute" class="role-radio">
+          <input type="radio" name="role_${index}" value="substitute" class="role-radio">
           <span>Suplente</span>
         </label>
       </div>
@@ -154,17 +140,17 @@ function addPlayer() {
     <div class="player-inputs">
       <div class="form-group">
         <label>Nombre del Jugador</label>
-        <input type="text" name="playerName_${count}" placeholder="Nombre" class="player-name" maxlength="50" required>
+        <input type="text" name="playerName_${index}" placeholder="Nombre" class="player-name" maxlength="50" required>
       </div>
 
       <div class="form-group">
         <label>UID (20 dígitos)</label>
-        <input type="text" name="playerUID_${count}" placeholder="12345678901234567890" class="player-uid" maxlength="20" pattern="\\d{20}" required>
+        <input type="text" name="playerUID_${index}" placeholder="12345678901234567890" class="player-uid" maxlength="20" pattern="\\d{20}" required>
       </div>
 
       <div class="form-group">
         <label>País</label>
-        <select name="playerCountry_${count}" class="player-country" required>
+        <select name="playerCountry_${index}" class="player-country" required>
           <option value="">Seleccionar país</option>
           ${Object.entries(COUNTRIES)
             .map(([key, { name, flag }]) => `<option value="${key}">${flag} ${name}</option>`)
@@ -174,14 +160,11 @@ function addPlayer() {
 
       <div class="form-group">
         <label>Teléfono</label>
-        <input type="tel" name="playerPhone_${count}" placeholder="Número de teléfono" class="player-phone" data-player-index="${count}" required>
+        <input type="tel" name="playerPhone_${index}" placeholder="Número de teléfono" class="player-phone" data-player-index="${index}" required>
         <small class="phone-digits-hint"></small>
       </div>
     </div>
   `
-
-  container.appendChild(playerDiv)
-  updatePlayerCount()
 
   const countrySelect = playerDiv.querySelector(".player-country")
   const phoneInput = playerDiv.querySelector(".player-phone")
@@ -202,28 +185,37 @@ function addPlayer() {
     }
   })
 
-  console.log("[v0] Jugador agregado, total:", container.children.length)
+  return playerDiv
 }
 
-function removePlayer() {
+function addPlayer() {
   const container = document.getElementById("playersContainer")
-  const count = container.children.length
 
-  if (count <= 1) {
-    alert("Debe haber al menos 1 jugador")
+  if (!container) {
+    console.error("[v0] Container de jugadores no encontrado")
     return
   }
 
-  container.lastChild.remove()
+  const count = container.children.length
+
+  if (count >= 24) {
+    alert("Máximo de 24 jugadores alcanzado")
+    return
+  }
+
+  const playerDiv = createPlayerElement(count)
+  container.appendChild(playerDiv)
   updatePlayerCount()
+
+  console.log("[v0] Jugador agregado, total:", container.children.length)
 }
 
+// Declare updatePlayerCount and COUNTRIES variables
 function updatePlayerCount() {
   const container = document.getElementById("playersContainer")
-  const count = container.children.length
-  document.getElementById("currentCount").textContent = count
+  const count = container ? container.children.length : 0
+  console.log("[v0] Actualizando contador de jugadores:", count)
 }
-
 async function handleFormSubmit(e) {
   e.preventDefault()
   console.log("[v0] Iniciando envío del formulario")
