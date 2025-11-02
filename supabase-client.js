@@ -2,7 +2,6 @@ const SUPABASE_URL = "https://oizuywsjsnicfflzlyif.supabase.co"
 const SUPABASE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9penV5d3Nqc25pY2ZmbHpseWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwNTE0NjUsImV4cCI6MjA3NzYyNzQ2NX0.HtyBQOAior9dQ9d041DHCdFB1OesZTCdWdJMlMY03oc"
 
-// Supabase API wrapper
 window.SupabaseClient = {
   async saveRegisteredTeam(team) {
     try {
@@ -82,7 +81,6 @@ window.SupabaseClient = {
 
   async saveHeroStats(stats) {
     try {
-      // First try to get existing record
       const getResponse = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats?id=eq.1`, {
         method: "GET",
         headers: {
@@ -93,7 +91,6 @@ window.SupabaseClient = {
       const existing = await getResponse.json()
 
       if (existing && existing.length > 0) {
-        // Update existing
         const response = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats?id=eq.1`, {
           method: "PATCH",
           headers: {
@@ -106,7 +103,6 @@ window.SupabaseClient = {
         if (!response.ok) throw new Error(await response.text())
         return await response.json()
       } else {
-        // Insert new
         const response = await fetch(`${SUPABASE_URL}/rest/v1/hero_stats`, {
           method: "POST",
           headers: {
@@ -363,22 +359,19 @@ window.SupabaseClient = {
 
 window.supabase = window.SupabaseClient
 
-// For ES6 module compatibility if needed
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = { supabase: window.SupabaseClient }
-}
+export const supabase = window.SupabaseClient
 
-const supabase = window.SupabaseClient
-
-// Polling for real-time updates
 setInterval(async () => {
   try {
     const teams = await window.SupabaseClient.getRegisteredTeams()
-    localStorage.setItem("registeredTeams", JSON.stringify(teams))
     window.dispatchEvent(new CustomEvent("teamsUpdated", { detail: teams }))
-  } catch (error) {
-    console.log("[v0] Polling error (expected):", error.message)
-  }
-}, 3000)
 
-export { supabase }
+    const stats = await window.SupabaseClient.getHeroStats()
+    window.dispatchEvent(new CustomEvent("statsUpdated", { detail: stats }))
+
+    const matches = await window.SupabaseClient.getTournamentMatches()
+    window.dispatchEvent(new CustomEvent("matchesUpdated", { detail: matches }))
+  } catch (error) {
+    console.log("[v0] Polling error:", error.message)
+  }
+}, 2000)
